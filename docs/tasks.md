@@ -19,7 +19,7 @@ Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 Plan (approved by the owner on 2026-11-23): three `researcher` subagents on Sonnet in parallel, then one report written by a subagent on Opus.
 
-- [ ] Researcher 1, GitHub Copilot SDK basics: setup with your own model API key, the Python API, streaming output, current limits and preview status
+- [x] Researcher 1, GitHub Copilot SDK basics: setup with your own model API key, the Python API, streaming output, current limits and preview status. Notes: `docs/research/research_notes/M1 技术调研/copilot_sdk_basics.md`
 - [x] Researcher 2, GitHub Copilot SDK for several users: session persistence and resume, isolation between users, deployment shapes (one runtime per user or a shared one). Notes: `docs/research/research_notes/M1 技术调研/copilot_sdk_multi_user.md`
 - [ ] Researcher 3, open-source components to borrow: frontend and backend scaffolding, chat interface components, conventions for streaming between backend and frontend; the license and maintenance state of each
 - [ ] One report in Chinese for the owner, with sources
