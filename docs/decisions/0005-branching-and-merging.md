@@ -1,11 +1,11 @@
 # 0005 Branching and merging: `main` holds approved work, each task gets a branch
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-23
 
 ## Background
 
-Until now all work sat on one working branch. The owner proposed creating `main`, doing each piece of work on its own branch, and merging it when ready. What is still open is how a branch reaches `main` and who performs the merge.
+At first all work sat on one working branch. The owner proposed creating `main`, doing each piece of work on its own branch, and merging it when ready. The open question was how a branch reaches `main` and who performs the merge.
 
 Terms: a branch is a separate line of work that does not affect `main` until it is merged. A pull request is a page on GitHub that shows exactly what a branch would change and waits for someone to merge it.
 
@@ -17,7 +17,7 @@ Terms: a branch is a separate line of work that does not affect `main` until it 
 
 ## Decision
 
-Proposed: option 1.
+Option 1. The rule is in `AGENTS.md` under "Branches and merging".
 
 ## Reasons
 
@@ -30,6 +30,7 @@ Proposed: option 1.
 
 - Each task needs one more step from the owner: open the pull request page and merge.
 - The main agent does not push to `main` directly. The one exception was creating `main`, which the owner approved.
+- This rule is only words until `main` is protected on GitHub. The owner sets that protection in the repository settings.
 
 ## Evidence
 
