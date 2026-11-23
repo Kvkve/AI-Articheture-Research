@@ -137,3 +137,11 @@ All items here are INFERENCE. I do not choose.
 - Whether sample repo `copilot-sdk-server-sample` has recent commits; license MIT as shown on its page.
 - Independent third-party reports (blogs, forums) on multi-user use: none found in two searches.
 - Anything from my own memory was not used. No claim here is unverified-from-memory.
+
+## Main agent's check (2026-11-23)
+The main agent fetched five of this note's sources again. The facts match, with one caveat.
+- Repository page `github.com/microsoft/copilot-sdk`: README title "Microsoft Copilot SDK", the sentence "GitHub Copilot SDK is becoming Microsoft Copilot SDK", MIT, a runtime "separate from the Copilot CLI", and "generally available and follows semantic versioning". Caveat: the page showed no redirect notice and its Issues link still pointed to `github/copilot-sdk`. So the move is in progress, and which address redirects to which is not verified.
+- PyPI `github-copilot-sdk`: 1.0.35 released 2026-11-18, "3 - Alpha", Python >= 3.11, marked deprecated in favor of `microsoft-copilot-sdk`. Matches.
+- `docs/setup/multi-tenancy.md`: "the application owns request routing and authorization", `mode: "empty"` required for shared use, session state under `COPILOT_HOME/session-state/{sessionId}` unless routed through `sessionFs`, no user or tenant concept. Matches.
+- `docs/features/session-persistence.md`: the `~/.copilot/session-state/{sessionId}/` path, the file list, "API keys are never persisted to disk", the Python create and resume examples, and "The SDK doesn't provide built-in session locking". Matches.
+- Issue 2889: opened 2026-11-01, the memory numbers, the versions and macOS. Matches. The fetched page showed a "Backlog" status and did not clearly show open or closed.
