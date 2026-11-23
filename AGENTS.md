@@ -28,6 +28,12 @@ These rules apply to every AI tool. The project's purpose, target architecture a
 
 Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and actions that cannot be undone, such as deleting data or rewriting git history. Work inside an approved plan does not need item-by-item approval.
 
+## Branches and merging
+
+- `main` holds approved work. Do not push to `main` directly.
+- Do each piece of work on its own branch. When it is ready, open a pull request to `main`.
+- Only the owner merges a pull request.
+
 ## Language
 
 Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words.
