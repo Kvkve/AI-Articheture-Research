@@ -36,7 +36,7 @@ Updated 2026-11-23 (US Eastern Time).
 2. Take the owner through choices (b) to (f) in section 10 of the report, one or two at a time, with options, costs and a recommendation. The real trial adds three points to raise: which model the product uses; whether the interface shows the model's reasoning; whether requests should be kept in the United States.
 3. Correct the sentence about the runtime in `README.md`.
 4. Write the plan and acceptance criteria for the first PoC in `docs/tasks.md` for the owner to review.
-5. When the first PoC needs a model key: the owner enters a key as the variable `POC_MODEL_API_KEY` on the project environment `AI-Articheture-Research`, then starts a new session on that environment. On 2026-11-23 the owner could not find that environment in the app. Help the owner find it first.
+5. When the first PoC needs a model key: the owner enters a key as the variable `POC_MODEL_API_KEY` on the project environment `AI-Articheture-Research`, then starts a new session on that environment. Where to find it: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It lists every environment, with a settings icon on each row. It is shown only until the first message of the new session is sent. The menu at the title of a running session only edits that session's own environment. Source: [Configure cloud environments](https://code.claude.com/docs/en/cloud-environments), read 2026-11-23. On that day the owner looked in the title menu of a running session and did not find the project environment there.
 
 ## How to run and verify
 
