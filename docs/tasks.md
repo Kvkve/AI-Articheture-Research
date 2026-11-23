@@ -25,8 +25,8 @@ Plan (approved by the owner on 2026-11-23): three `researcher` subagents on Sonn
 - [x] One report in Chinese for the owner, with sources: `docs/research/reports/第一版 PoC 技术调研.md`
 - [x] First concept lesson for the owner, built on the report and starting from the data model: what an API is, what a session is, what streaming is. Given in conversation on 2026-11-23, with the owner's follow-up questions answered. The owner's change to the teaching rules on the same day withdrew its explain-back questions and its exercise
 - [x] Trial run of the SDK without a model key, against a local stand-in provider (2026-11-23). Notes: `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`
-- [ ] Trial run with a real model provider: one chat turn, once the owner has chosen the provider and supplied a key through the secure form
-- [x] Create the cloud environment `AI-Articheture-Research` for this project only (2026-11-23). The owner will enter the model key there as the variable `POC_MODEL_API_KEY`
+- [x] Trial run with a real model provider: one chat turn, once the owner has chosen the provider and supplied a key through the secure form. Done on 2026-11-23 with one difference from this wording: the key was given as the environment variable `POC_MODEL_API_KEY`, not through a form, because a form cannot carry this kind of key (see `docs/status.md`). The run used Anthropic, the model `claude-opus-5-5`, and two chat turns with a disconnect and a resume between them. The provider's data terms were checked first. Notes: the section "Third run: a real model provider" in `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`
+- [x] Create the cloud environment `AI-Articheture-Research` for this project only (2026-11-23). The plan was to enter the model key there. For the trial the key was set on the owner's Default environment instead; see `docs/status.md`
 - [ ] Write the plan and acceptance criteria for the first PoC, for the owner to review
 
 ## First PoC
