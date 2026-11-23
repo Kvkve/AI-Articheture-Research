@@ -41,6 +41,8 @@ Updated 2026-11-23 (US Eastern Time).
 
 There is no project code yet. The trial scripts are printed at the end of `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. The script of the third run reads the provider address, the model name and the name of the key variable from the environment. Never print the key. Do not name the key variable `ANTHROPIC_API_KEY`: the session's own program may read that name.
 
+For trial runs, call a low-cost model, not Opus. The owner said so on 2026-11-23 after the real trial used `claude-opus-5-5`. The runtime may choose other request settings for another model, so run one trial with the product's model once the owner has chosen it.
+
 ## Open items
 
 - Two tasks under "Set the rules" wait for the owner: set the default branch to `main`, and protect `main`. They do not block the first PoC.
