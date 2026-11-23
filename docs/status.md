@@ -26,16 +26,17 @@ Updated 2026-11-23 (US Eastern Time).
   - Decision records are only for product design choices that are costly to change. There is no decision record yet. The next number is 0007.
   - No made-up abbreviations or short labels. The rule is in `AGENTS.md` under "Language".
 - The agent layer (choice (a) in section 10 of the report): the owner leans to using the SDK and wanted a trial first. The trials without a key and the trial with a real model all passed. No decision record is written yet.
-- Model key: the owner created a Claude API key and set it as the variable `POC_MODEL_API_KEY`. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form. It is on the owner's **Default** cloud environment, not on the project environment. It is stored in plain text, and every session of any project that runs on Default can read it. The trial never printed it and wrote it to no file.
+- Model key: no cloud environment holds a model key now. For the real trial the owner set a Claude API key as the variable `POC_MODEL_API_KEY` on the owner's Default environment, not on the project environment. The trial never printed it and wrote it to no file. On 2026-11-23, after the trial, the variable was removed from Default at the owner's word. The key itself stays valid until the owner revokes it in the provider's console.
+- How a key is given: in a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form. A variable is stored in plain text, and every session on that environment can read it. Only a session started afterwards sees it.
 - Cloud environments: the project environment `AI-Articheture-Research` (created 2026-11-23) allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has no variables and no setup script. The session that ran the real trial ran on Default, which has unrestricted network access.
 
 ## Next step
 
-1. The owner decides what to do with the key on the Default environment: delete the variable now and enter a new key on the project environment when the first PoC needs it, or move it to the project environment now. The main agent recommends deleting it now, because no work needs it until the first PoC has code.
-2. Write decision record 0007 on the agent layer, with the owner's reason in one sentence.
-3. Take the owner through choices (b) to (f) in section 10 of the report, one or two at a time, with options, costs and a recommendation. The real trial adds three points to raise: which model the product uses; whether the interface shows the model's reasoning; whether requests should be kept in the United States.
-4. Correct the sentence about the runtime in `README.md`.
-5. Write the plan and acceptance criteria for the first PoC in `docs/tasks.md` for the owner to review.
+1. Write decision record 0007 on the agent layer, with the owner's reason in one sentence.
+2. Take the owner through choices (b) to (f) in section 10 of the report, one or two at a time, with options, costs and a recommendation. The real trial adds three points to raise: which model the product uses; whether the interface shows the model's reasoning; whether requests should be kept in the United States.
+3. Correct the sentence about the runtime in `README.md`.
+4. Write the plan and acceptance criteria for the first PoC in `docs/tasks.md` for the owner to review.
+5. When the first PoC needs a model key: the owner enters a key as the variable `POC_MODEL_API_KEY` on the project environment `AI-Articheture-Research`, then starts a new session on that environment. On 2026-11-23 the owner could not find that environment in the app. Help the owner find it first.
 
 ## How to run and verify
 
