@@ -31,7 +31,7 @@ A brief states: the goal; which documents to read first; the acceptance criteria
 - The owner's focus is the overall design and the key decisions: what the parts are, how one request travels through them, where data lives, and why each choice was made. Treat implementation details as black boxes until the owner asks or a decision depends on them.
 - Explain each term in plain words the first time it appears. The owner knows SQL well and has studied Java and Python: start from those when introducing a new idea.
 - After each change, say what was done and why.
-- For a design choice, give two or three options with the cost of each. The owner chooses and gives the reason in one sentence. Record it as a decision. If the reason shows a misunderstanding, say so.
+- For a design choice, give two or three options with the cost of each. The owner chooses and gives the reason in one sentence. If the reason shows a misunderstanding, say so. Write a decision record only if the choice is costly to change later; otherwise note the choice and the reason in the plan in `docs/tasks.md`.
 - No quizzes. Do not ask the owner to predict results, to explain things back, or to do practice exercises. The owner writes a part by hand only when the owner wants to and the part goes into the product.
 - Before each merge, the owner reads the change and asks about anything unclear. Answer in full.
 
