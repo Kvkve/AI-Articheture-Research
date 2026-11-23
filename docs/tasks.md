@@ -12,8 +12,8 @@ Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 - [ ] Owner protects `main` on GitHub: changes only through a pull request
 - [ ] Owner's self-test for M0: explain the branch and pull request flow in their own words, and make one small change alone (tick the two boxes above through a pull request)
 - [x] Check that the limits in `.claude/settings.json` are loaded in a new session (both variables are present)
-- [ ] Test that the concurrent limit is enforced: start four trivial subagents at once and expect the fourth to be refused. This starts more than three, so ask the owner first
-- [ ] Test that nesting is off: ask one subagent to start another and expect a refusal
+- [x] Test that the concurrent limit is enforced: on 2026-11-23, with the owner's approval, four trivial subagents were started at once. Three ran at the same time and the fourth was refused with "Concurrent subagent limit reached"
+- [ ] Test that nesting is off: ask one subagent to start another and expect a refusal. Tried on 2026-11-23: the session's permission classifier denied the test call itself, so the limit was not exercised
 
 ## M1 Technical research
 
