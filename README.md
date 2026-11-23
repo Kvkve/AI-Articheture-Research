@@ -39,13 +39,13 @@ The parts, from left to right:
 - **Web interface.** What the user sees: a sign-in step, a list of conversations, a chat window.
 - **Backend API.** Receives requests from the web interface, checks who the user is, and passes messages to the agent.
 - **Session management.** Maps each user's conversation to an agent session, so a conversation can be resumed and users cannot see each other's data.
-- **Agent SDK and runtime.** The planned choice is the GitHub Copilot SDK, which drives the Copilot CLI as its runtime. This is to be confirmed by the technical research in milestone M1.
+- **Agent SDK and runtime.** The planned choice is the GitHub Copilot SDK, which drives the Copilot CLI as its runtime. This is to be confirmed by the technical research.
 - **Tools and integrations.** Functions the agent can call to query databases and other APIs.
 - **Response cache and knowledge.** Reuse of earlier answers, and a loop that turns reviewed feedback into knowledge updates.
 
 ## Scope
 
-**First PoC (milestone M2):** a simple frontend and backend; chat with a model through an API key; several users; several conversations per user.
+**First PoC:** a simple frontend and backend; chat with a model through an API key; several users; several conversations per user.
 
 **Later:** response cache, knowledge sources, connections to databases and other APIs, deployment.
 

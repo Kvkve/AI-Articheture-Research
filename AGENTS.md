@@ -36,7 +36,7 @@ Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and 
 
 ## Language
 
-Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words.
+Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words. Do not make up abbreviations or short labels for stages, tasks or parts of the system. Use plain names.
 
 ## Document map
 
@@ -53,8 +53,9 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 ## Keeping documents in order
 
 - Rewrite `docs/status.md` in full at the end of each session. Do not append. Git keeps the history.
+- Prune this file and `CLAUDE.md` at the end of each milestone. Rule files grow over time.
 - Decision records:
-  - Write one only when the choice has real alternatives and would be costly to change later. Small choices do not get one.
+  - Write one only for a choice about the design of the product that has real alternatives and would be costly to change later. Small choices do not get one. Rules about how the work is done are not decisions: change the rule in this file or in `CLAUDE.md`, and give the reason in the commit message.
   - One decision per file, numbered in order. Update the index in `docs/decisions/README.md` in the same change.
   - Status is one of three. "Proposed" is for reference only. "Accepted" must be followed. "Superseded" is history only. Only the owner can make a decision "Accepted".
   - A new decision that changes an old one marks the old one "Superseded" in the same change. Each links to the other.
@@ -76,4 +77,4 @@ Check commands and language-specific rules will be added here with the first cod
 
 A task is done when all three hold: it meets the acceptance criteria written for it in `docs/tasks.md`; all automatic checks pass; a party that did not write it has reviewed it.
 
-A milestone is done when, in addition, the owner can explain the finished part without looking at the conversation, and can make one small change to it alone.
+A milestone is done when, in addition, the owner has read its changes and every question the owner asked about them has been answered.
