@@ -1,34 +1,34 @@
-# 0003 学习方式：负责人参与决策、亲手写一部分、每个里程碑自测
+# 0003 Learning: the owner joins each decision, writes some parts by hand, and self-tests at each milestone
 
-- 状态：提议中
-- 日期：2026-11-23
+- Status: Accepted
+- Date: 2026-11-23
 
-## 背景
+## Background
 
-负责人熟 SQL，学过 Java 和 Python，没做过 Web 后端、前端和架构。目标之一是学会，并且以后能参与审查。调研显示把代码全交给 AI 的人学到的明显更少，"系统能运行但说不清原理"是常见的结果。
+The owner knows SQL well, has studied Java and Python, and has not built a web backend, a frontend or a system architecture before. One goal of the project is for the owner to learn, and later to take part in review. Research shows that people who hand all the coding to an AI learn clearly less. A common result is a system that runs while its owner cannot explain how.
 
-## 选项
+## Options
 
-1. AI 写完，负责人读代码和讲解。
-2. 负责人参与每个设计选择，亲手写选定的部分，用预测和复述检验理解。
-3. 负责人自己写大部分代码，AI 只辅导。
+1. The AI writes everything. The owner reads the code and the explanations.
+2. The owner takes part in each design choice, writes selected parts by hand, and tests understanding by predicting and explaining back.
+3. The owner writes most of the code. The AI only tutors.
 
-## 决定
+## Decision
 
-选 2。具体做法见 `CLAUDE.md` 的"教学"一节。
+Option 2. The practices are in `CLAUDE.md` under "Teaching".
 
-## 理由
+## Reasons
 
-- 对照实验里，用 AI 写代码的新手测验约 50 分，手写的约 67 分。得分高的人会追问原理、让 AI 解释；得分低的人把报错反复贴回给 AI。
-- 选项 1 接近实验里得分低的用法。选项 3 进度太慢，也超出了负责人"不必死磕全部"的要求。
-- 学习重点放在数据模型、一个请求的完整路径、前端后端数据库之间传什么、每个决策的理由。样式、构建工具、框架内部先当黑箱。
+- In a controlled experiment, beginners who coded with an AI scored about 50 on a quiz, against about 67 for those who coded by hand. High scorers asked about concepts and asked the AI to explain. Low scorers pasted errors back to the AI again and again.
+- Option 1 is close to the low-scoring pattern. Option 3 is too slow and goes beyond what the owner asked for, which was to learn without mastering every detail.
+- Learning focuses on the data model, the full path of one request, what passes between frontend, backend and database, and the reason for each decision. Styling, build tools and framework internals are treated as black boxes at first.
 
-## 代价和防范
+## Costs and safeguards
 
-- 进度会变慢，负责人已接受。
-- 这些做法来自一般的学习研究，没有在"非职业开发者用 agent 工具做长期项目"的场景下测过。
-- 检验方式：每个里程碑结束时，负责人不看对话，能否说清刚完成的部分并自己做一处小修改。做不到就先补课，再往下走。
+- Progress is slower. The owner has accepted this.
+- These practices come from general research on learning. Nobody has tested them for a non-professional developer running a long project with agent tools.
+- The test: at the end of each milestone, can the owner explain the finished part without looking at the conversation, and make one small change alone? If not, fill the gap before moving on.
 
-## 依据
+## Evidence
 
-`docs/research/reports/AI 协作开发工作流调研.md` 的"让 AI 写代码可以，让 AI 替你思考不行"一节。
+`docs/research/reports/AI 协作开发工作流调研.md`, section "让 AI 写代码可以，让 AI 替你思考不行".

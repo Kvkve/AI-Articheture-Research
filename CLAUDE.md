@@ -1,28 +1,38 @@
 @AGENTS.md
 
-# Claude Code 专用规则
+# Rules for Claude Code
 
-## 分工
+## Division of work
 
-- 主 agent 负责设计方案、拆任务、写任务说明、验收，以及给负责人讲解。几行以内的小改动直接做。
-- 写代码交给 `implementer`，一次只派一个，上一个验收完再派下一个。
-- 查资料交给 `researcher`，审查交给 `reviewer`。审查者不能是写这段代码的那个。
-- subagent 说"做完了"不算数。主 agent 亲自读改动、亲自运行检查后才算。
-- 审查最多两轮。两轮后仍有分歧，交给负责人裁决。
-- 负责人亲手写的部分，agent 不改，只给意见。
+- The main agent designs, splits work into tasks, writes task briefs, verifies results, and explains to the owner. It makes changes of a few lines itself.
+- Code is written by `implementer`. Research is done by `researcher`. Review is done by `reviewer`, which must not be the agent that wrote the code.
+- A subagent's "done" is a claim. The main agent reads the diff and runs the checks itself before accepting.
+- At most two review rounds. If a disagreement remains, the owner decides.
+- Agents do not edit code the owner wrote by hand. They give comments only.
 
-## 任务说明要写什么
+## Using subagents
 
-目标；要先读的文档路径；验收标准；不许动的范围；返回什么。subagent 看不到对话历史，说明里要写全。
+- One code-writing subagent at a time. Start the next only after the previous result is accepted.
+- Parallel subagents are for read-only research, three at most. More than three needs the owner's approval first.
+- Subagents do not start subagents.
+- Every subagent runs on the model named in its definition or in the call.
+- Commit each accepted piece of work before starting the next, so finished work survives if usage runs out.
+- Before starting subagents, tell the owner how many, what each will do, and on which model.
 
-## 教学
+The limit of three and the ban on nested subagents are also set in `.claude/settings.json`.
 
-- 术语第一次出现时用白话解释。负责人熟 SQL，学过 Java 和 Python，讲新概念时尽量从这些出发。
-- 每次改动后说明做了什么、为什么这样做。
-- 每个里程碑：先请负责人预测结果再展示；留一小块有设计含量的代码给负责人亲手写；请负责人复述，再补漏。
-- 设计选择先给两三个选项和各自的代价，由负责人定，写成决策记录。
+## Task briefs
 
-## 会话开始和结束
+A brief states: the goal; which documents to read first; the acceptance criteria; what must not be touched; what to return. A subagent cannot see the conversation, so the brief must be complete.
 
-- 开始：读 `docs/status.md` 和 `docs/tasks.md`。
-- 结束：重写 `docs/status.md`，提交并推送。
+## Teaching
+
+- Explain each term in plain words the first time it appears. The owner knows SQL well and has studied Java and Python: start from those when introducing a new idea.
+- After each change, say what was done and why.
+- At each milestone: ask the owner to predict the result before showing it; leave one small piece with a real design choice for the owner to write; ask the owner to explain it back, then fill the gaps.
+- For a design choice, give two or three options with the cost of each. The owner chooses. Record it as a decision.
+
+## Session start and end
+
+- Start: read `docs/status.md` and `docs/tasks.md`.
+- End: rewrite `docs/status.md`, commit, and push.

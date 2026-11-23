@@ -1,23 +1,25 @@
-# 当前状态
+# Current status
 
-更新于 2026-11-23（美国东部时间）。
+Updated 2026-11-23 (US Eastern Time).
 
-## 做到哪了
+## Where the work stands
 
-- 工作流调研完成，报告在 `docs/research/reports/AI 协作开发工作流调研.md`。
-- 项目规则、文档结构、agent 分工和前三份决策记录已起草，等负责人审。
+- The workflow research is finished. The report is `docs/research/reports/AI 协作开发工作流调研.md`.
+- The project rules, document structure, agent roles and project background are written and in English.
+- Decisions 0001 to 0004 are accepted. Decision 0005 (branching and merging) is proposed and waits for the owner.
+- The `main` branch exists.
 
-## 下一步
+## Next step
 
-1. 负责人审 `AGENTS.md`、`CLAUDE.md`、`.claude/agents/` 和 `docs/decisions/` 里三份"提议中"的决策。
-2. 审过之后做技术调研（`docs/tasks.md` 的 M1）。
+1. The owner reads the English files and says which lines to change.
+2. The owner decides on 0005: who merges a branch into `main`.
+3. Then the technical research in milestone M1 starts.
 
-## 怎么运行和验证
+## How to run and verify
 
-还没有代码。
+There is no code yet.
 
-## 待定问题
+## Open items
 
-- 仓库文档目前用中文写，是否保持。
-- implementer 和 reviewer 默认都用 Opus，是否调整。
-- GitHub 上的默认分支目前是 `claude/ecstatic-archimedes-zudlsn`，是否建立 `main`。
+- On GitHub the default branch is still the working branch. The owner can change it to `main` under Settings, General, Default branch.
+- The subagent limits in `.claude/settings.json` take effect when a new session starts. They are not verified yet. See the task in `docs/tasks.md`.

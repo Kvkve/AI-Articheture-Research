@@ -1,50 +1,73 @@
-# 项目规则
+# Project rules
 
-个人研究项目：学习并验证一套 AI agent 平台的架构，产出一个能运行的 PoC 和一批带出处的研究记录。负责人不是职业开发者，"负责人弄懂了"和"功能做出来了"同样算目标。
+A personal research project. It studies and tests the architecture of an AI agent platform. It produces a working proof of concept (PoC) and research notes with sources. The owner is not a professional developer: "the owner understands it" is a goal equal to "the feature works".
 
-本文件对所有 AI 工具生效。日期和时间一律用美国东部时间。
+These rules apply to every AI tool. The project's purpose, target architecture and scope are in `README.md`. Dates and times use US Eastern Time.
 
-## 硬性边界
+## Hard limits
 
-- **不写入公司相关内容。** 真实的公司名、内部系统名、仓库名、数据、截图都不进仓库。
-- **外部内容标出处。** 引用资料写明链接和访问日期，没核实的标"未核实"。借用代码前先确认许可证：MIT、Apache-2.0、BSD 可以直接用，其他先问负责人；用了就登记到 `docs/sources.md`。
-- **同一时间只有一方在改代码**：负责人、主 agent 或一个 subagent。
-- **不为了通过检查而改检查。** 不修改或删除测试、检查配置、验收标准来让结果通过；做不到就停下来说明原因。
-- **不在文档地图之外新建文档。** 需要新类别时先问负责人。
-- **没验证过就不说"完成"。**
+- **No company content.** No real company names, internal system names, repository names, data or screenshots.
+- **Cite sources.** Give the link and access date for anything quoted. Mark unverified claims "unverified". Check the license before borrowing code: MIT, Apache-2.0 and BSD are fine; ask the owner about any other. Record borrowed code in `docs/sources.md`.
+- **One writer at a time.** Only one party changes code at any moment: the owner, the main agent, or one subagent.
+- **Do not change the checks to pass the checks.** Do not edit or delete tests, check configuration or acceptance criteria to get a pass. If you cannot pass honestly, stop and explain.
+- **No new documents outside the document map.** Ask the owner before adding a new kind of document.
+- **Do not say "done" without verifying.**
 
-## 需要负责人点头的事
+## Ask before deciding
 
-设计决策、里程碑计划、对本文件和 `CLAUDE.md` 的修改，以及删除数据、改写 git 历史这类不可逆操作。已批准的计划之内的实现不用逐项询问。
+- Ask the owner first, and do not choose yourself, when:
+  - an instruction can be read in more than one way and the readings lead to different work;
+  - something the owner did not mention would change what gets built;
+  - a design or technology choice has more than one workable option;
+  - an action is hard to undo.
+- Small details inside an approved plan that have a common default can be done directly. List the assumptions you made when you report.
+- When you ask, give the options, the cost of each, and a recommendation.
+- A subagent cannot ask the owner. In the cases above it stops and reports to the main agent.
 
-## 文档地图
+## What needs the owner's approval
 
-| 什么时候 | 读哪里 | 里面是什么 |
+Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and actions that cannot be undone, such as deleting data or rewriting git history. Work inside an approved plan does not need item-by-item approval.
+
+## Language
+
+Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words.
+
+## Document map
+
+| When | Read | What it holds |
 |---|---|---|
-| 开始一次会话 | `docs/status.md` | 现在做到哪、下一步、怎么运行和验证 |
-| 决定接下来做什么 | `docs/tasks.md` | 里程碑和任务清单 |
-| 要做或要改一个设计选择 | `docs/decisions/` | 已定的决策和理由 |
-| 需要依据或想引用资料 | `docs/research/reports/` | 调研报告；原始笔记在 `docs/research/research_notes/` |
-| 要借用外部代码 | `docs/sources.md` | 第三方来源和许可证清单（首次借用时创建） |
-| 给负责人讲解或回顾 | `docs/learning/` | 负责人的学习笔记（首次讲解时创建） |
+| Starting a session | `docs/status.md` | Where the work stands, the next step, how to run and verify |
+| Choosing what to do next | `docs/tasks.md` | Milestones and the task list |
+| You need the purpose, target architecture or scope | `README.md` | Project background |
+| Making or changing a design choice | `docs/decisions/README.md` | Index of decisions; each decision is a file in the same folder |
+| You need evidence or want to cite something | `docs/research/reports/` | Research reports; raw notes are in `docs/research/research_notes/` |
+| Borrowing outside code | `docs/sources.md` | Third-party sources and licenses (created at first use) |
+| Explaining to the owner or reviewing a lesson | `docs/learning/` | The owner's learning notes (created at first use) |
 
-## 文档怎么维护
+## Keeping documents in order
 
-- `docs/status.md` 每次会话结束时整份重写，不往后追加。历史靠 git 记录。
-- 决策记录一事一文件，编号递增。状态只有三种："提议中"仅供参考，"已采纳"必须遵守，"已取代"只当历史。只有负责人能把状态改成"已采纳"。任务和已采纳的决策冲突时，停下来问。
-- 教训不单独建文件。把它变成一项自动检查、本文件的一行规则，或对已有文档的修改；变不成就不记。
-- `docs/learning/` 是负责人的理解记录，带日期，不是规则。
+- Rewrite `docs/status.md` in full at the end of each session. Do not append. Git keeps the history.
+- Decision records:
+  - Write one only when the choice has real alternatives and would be costly to change later. Small choices do not get one.
+  - One decision per file, numbered in order. Update the index in `docs/decisions/README.md` in the same change.
+  - Status is one of three. "Proposed" is for reference only. "Accepted" must be followed. "Superseded" is history only. Only the owner can make a decision "Accepted".
+  - A new decision that changes an old one marks the old one "Superseded" in the same change. Each links to the other.
+  - If a task conflicts with an accepted decision, or two accepted decisions conflict, stop and ask. Do not pick one.
+  - The owner can change any decision at any time. Record the change as a new decision and list the finished work it affects.
+  - Review all accepted decisions at the end of each milestone.
+- Lessons do not get their own file. Turn a lesson into an automatic check, a line in this file, or an edit to an existing document. If none fits, do not record it.
+- `docs/learning/` records the owner's understanding, with dates. It is not a set of rules.
 
-## 代码约定
+## Code conventions
 
-- 注释只写"为什么"，不复述代码在做什么。
-- 配置值（地址、密钥、模型名、限额）不写死在代码里，统一从配置读取。
-- 不留占位实现和 TODO。做不完就记进 `docs/tasks.md` 并说明。
+- Comments say why, not what the code does.
+- No hard-coded configuration values (addresses, keys, model names, limits). Read them from configuration.
+- No placeholder implementations and no TODOs. If something cannot be finished, record it in `docs/tasks.md` and say so.
 
-检查命令和各语言的具体规则，随第一批代码加入本文件。
+Check commands and language-specific rules will be added here with the first code.
 
-## 完成的标准
+## Definition of done
 
-一项任务算完成，需要同时满足三条：达到 `docs/tasks.md` 里为它写明的验收标准；自动检查全部通过；由没参与编写的一方审查过。
+A task is done when all three hold: it meets the acceptance criteria written for it in `docs/tasks.md`; all automatic checks pass; a party that did not write it has reviewed it.
 
-一个里程碑算完成，还要加一条：负责人不看对话，能说清刚完成的部分，并自己做一处小修改。
+A milestone is done when, in addition, the owner can explain the finished part without looking at the conversation, and can make one small change to it alone.

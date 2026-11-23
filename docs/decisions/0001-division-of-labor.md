@@ -1,35 +1,36 @@
-# 0001 分工：主 agent 调度，一次只有一方写代码
+# 0001 Division of work: the main agent coordinates, one party writes code at a time
 
-- 状态：提议中
-- 日期：2026-11-23
+- Status: Accepted
+- Date: 2026-11-23
 
-## 背景
+## Background
 
-主 agent 用的是最贵的模型，上下文也有限。负责人希望由它调度，把写代码交给较便宜的 subagent。调研显示多个 agent 并行写代码成本高，效果未必好。
+The main agent runs on the most expensive model and has a limited context window. The owner wants it to coordinate and to hand code writing to cheaper subagents. Research shows that several agents writing code in parallel cost more and often do no better. The owner has also seen a main agent start more than ten subagents at once, use up the token allowance, and finish none of the tasks.
 
-## 选项
+## Options
 
-1. 主 agent 自己写全部代码，subagent 只做调研和审查。
-2. 主 agent 调度，一次派一个 subagent 写代码。
-3. 多个 subagent 并行写不同部分。
+1. The main agent writes all code. Subagents only research and review.
+2. The main agent coordinates and hands code writing to one subagent at a time.
+3. Several subagents write different parts in parallel.
 
-## 决定
+## Decision
 
-选 2。
+Option 2. The flow is: one subagent writes, a different subagent reviews, and the result returns to the main agent, which verifies it.
 
-## 理由
+## Reasons
 
-- 选项 3 有实测数据反对：成本是单 agent 的 1.8 到 5.1 倍，4 组对比只有 1 组明显更好；两个 agent 各写再合并的成功率约为单独完成的一半。
-- 选项 2 同一时间只有一方在改代码，避开了并行的问题，同时把读文件、跑测试、看报错这些消耗留在 subagent 那边。
-- 对选项 2 不利的证据只有一位开发者在单个项目上的经验：强模型规划、便宜模型执行的组合没有超过强模型自己写。
+- Measured data argues against option 3. Agent teams cost 1.8 to 5.1 times as much as a single agent, and only 1 of 4 comparisons was clearly better. Two agents that each wrote a part and then merged succeeded about half as often as one agent alone.
+- In option 2 only one party changes code at any moment, so the problems of parallel writing do not arise. File reading, test runs and error output stay in the subagent's context, not the main agent's.
+- The only evidence against option 2 is one developer's experience on one project: no mix of a strong planner and a cheaper executor beat the strong model working alone.
 
-## 代价和防范
+## Costs and safeguards
 
-- subagent 只知道任务说明里写的内容，说明写不清就会做偏。任务说明的要求见 `CLAUDE.md`。
-- subagent 可能没做完就报告完成。主 agent 必须亲自读改动、运行检查。
-- 成本可能失控。每个 subagent 写死模型；审查最多两轮。
-- 默认模型：implementer 和 reviewer 用 Opus，researcher 用 Sonnet。这是起点，按实际结果调整。
+- A subagent knows only what the brief says. A poor brief leads to wrong work. What a brief must contain is in `CLAUDE.md`.
+- A subagent may report "done" when it is not. The main agent must read the diff and run the checks itself.
+- Usage can run away. The rules in `CLAUDE.md` under "Using subagents" limit this: one code writer at a time; at most three parallel subagents, for read-only research only, and more needs the owner's approval; no nested subagents; a named model for every subagent; a commit after each accepted piece; at most two review rounds.
+- Two of these limits are enforced by settings, not only by words: `.claude/settings.json` sets the concurrent limit to 3 and turns off nested subagents. The `implementer` definition also denies it the tool that starts subagents.
+- Default models: `implementer` and `reviewer` use Opus, `researcher` uses Sonnet. This is a starting point, to be adjusted from results.
 
-## 依据
+## Evidence
 
-`docs/research/reports/AI 协作开发工作流调研.md` 的"只让一个代理写代码，便宜模型负责读和审"一节。
+`docs/research/reports/AI 协作开发工作流调研.md`, section "只让一个代理写代码，便宜模型负责读和审".

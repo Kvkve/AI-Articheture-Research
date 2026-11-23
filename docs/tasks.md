@@ -1,22 +1,26 @@
-# 任务清单
+# Task list
 
-状态标记：`[ ]` 未开始，`[~]` 进行中，`[x]` 完成。
+Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 
-## M0 立规矩
+## M0 Set the rules
 
-- [x] 调研 AI 协作开发的工作流和仓库规范
-- [~] 起草项目规则、文档结构、agent 分工和决策记录（等负责人审）
+- [x] Research workflows and repository conventions for AI-assisted development
+- [x] Write the project rules, document structure, agent roles and decisions 0001 to 0004
+- [x] Write the project background in `README.md`
+- [~] Owner reads the English files and asks for changes
+- [ ] Owner decides on decision 0005 (branching and merging)
+- [ ] At the start of the next session, verify that the limits in `.claude/settings.json` work: no more than 3 subagents at once, and a subagent cannot start a subagent
 
-## M1 技术调研
+## M1 Technical research
 
-- [ ] Copilot SDK 官方文档和示例：用自己的 API key 接入、会话持久化、多用户隔离、流式输出
-- [ ] 可借鉴的开源组件：前后端脚手架、聊天界面组件、流式传输的约定，逐个核实许可证和维护状态
-- [ ] 根据调研写 M2 的计划和验收标准，交负责人审
+- [ ] GitHub Copilot SDK official docs and examples: using your own API key, session persistence, isolation between users, streaming output
+- [ ] Open-source components to borrow: frontend and backend scaffolding, chat interface components, conventions for streaming; check the license and maintenance state of each
+- [ ] Write the M2 plan and acceptance criteria from the research, for the owner to review
 
-## M2 第一版 PoC
+## M2 First PoC
 
-目标：一个简单的前端和后端，用模型 API key 对话，支持多用户和多对话。计划在 M1 结束时写。
+Goal: a simple frontend and backend; chat with a model through an API key; several users; several conversations per user. The plan is written at the end of M1.
 
-## 以后
+## Later
 
-答案缓存、知识库、数据库和外部接口的连接、部署。先不排期。
+Response cache, knowledge sources, connections to databases and other APIs, deployment. Not scheduled yet.
