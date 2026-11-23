@@ -172,7 +172,7 @@ I found real bug reports, mostly BYOK-related, and version-pairing trouble. I fo
 - No other agent SDKs were named in the sources I read.
 
 ## Fitness for the first PoC (all INFERENCE)
-- No hard blocker found for "own model API key, Python backend, no Copilot subscription". The auth table, BYOK doc and a Python BYOK example all say it is supported. "No GitHub account" is not stated by any source read and stays unverified until someone runs the example without one.
+- No hard blocker found for "own model API key, Python backend, no Copilot subscription". The auth table, BYOK doc and a Python BYOK example all say it is supported. The README says BYOK needs no GitHub authentication (see the second check at the end). No one has confirmed it by running the example yet.
 - Risk, fast change: v2.0.1 is 5 days old, daily pre-releases, PyPI says Alpha, package renamed. Pin exact versions of SDK and runtime together.
 - Risk, BYOK quality: several BYOK bugs (token limits, events, Anthropic) and one timeout report after a runtime upgrade. Test the exact provider and model early.
 - Risk, runtime still Copilot: BYOK still downloads and runs the Copilot runtime. Needs network at first start or a pre-baked image.
@@ -200,3 +200,11 @@ The main agent fetched five of this note's sources again. Raw files on `raw.gith
 - GitHub Docs auth page: the table says BYOK needs no Copilot subscription and bills through the model provider. Matches. Correction: the page does not say whether a GitHub account is needed, and the BYOK doc only says "GitHub identity remains independent". The note first said "no GitHub account"; that wording was removed in sections B and "Fitness".
 - `docs/auth/byok.md`: the Python example was copied again in full (section C). Provider type values on the page are `openai`, `azure`, `anthropic`, `google`.
 - `python/README.md`: `pip install microsoft-copilot-sdk`, Python 3.11+, streaming switched on with `events={"streaming": True}`, `assistant.message_delta` with `delta_content`, modes `coding-agent` and `empty`, history through `get_events()` with no further detail. Matches.
+
+## Main agent's second check (2026-11-23)
+The owner asked whether the runtime is free and whether it depends on the vendor. The main agent had four official pages read again: `README.md`, `docs/setup/in-process-runtime.md`, `docs/auth/byok.md` and `SUPPORT.md`, all from `raw.githubusercontent.com/microsoft/copilot-sdk/main/`. Vendor claims, pages undated.
+- GitHub sign-in under BYOK: the README says "With BYOK, you can use the SDK without GitHub authentication by configuring your own API keys from supported LLM providers" and lists "BYOK - Use your own API keys (no GitHub auth required)". This updates the first check, which found no statement on the GitHub Docs page. It is still not confirmed by a run.
+- Cost: no page gives a price for the SDK or the runtime. The README says a GitHub Copilot subscription is required "unless you are using BYOK", and that a free tier exists. Under BYOK, "Usage is tracked by your provider, not GitHub Copilot".
+- License of the runtime: not stated. The only license statement is "MIT" for the repository. No page says whether the runtime is open source, or names the host it is downloaded from. The README says "Node.js and .NET include platform runtime artifacts, Python downloads them".
+- Contact with vendor servers under BYOK, and telemetry defaults: not stated. `in-process-runtime.md` only names telemetry as a supported setting.
+- Support: `SUPPORT.md` says the SDK is "maintained by GitHub staff AND THE COMMUNITY" and that support is limited to GitHub issues. No warranty or service level text.

@@ -8,7 +8,7 @@ Updated 2026-11-23 (US Eastern Time).
 - M1 research is finished and checked. Three notes are in `docs/research/research_notes/M1 技术调研/`. The report is `docs/research/reports/M1 技术调研.md`. The main agent fetched 15 of the cited sources again and recorded the result at the end of each note.
 - What the research found, in short:
   - The planned agent SDK is being renamed from GitHub Copilot SDK to Microsoft Copilot SDK. Version 2 (2026-11-18) no longer needs the Copilot CLI. Its runtime is a separate component from the same vendor. The Python package downloads it and loads it inside the application's own process by default.
-  - Using only the project's own model API key needs no Copilot subscription, by the vendor's documents. Whether it needs a GitHub account is not verified.
+  - Using only the project's own model API key needs no Copilot subscription and no GitHub sign-in, by the vendor's documents. No one has confirmed this by a run yet. The license of the runtime itself, and whether it sends data to the vendor, are not stated on the official pages read.
   - The SDK keeps each conversation as a folder of files on the disk of the machine that runs the runtime. It has no notion of a user. The application must keep its own table of which user owns which conversation and check it before every action.
   - The SDK changes fast. Versions must be pinned.
 - Decision 0006 is accepted and replaces 0003. The owner learns through real work: the owner makes each design choice with a one-sentence reason and reads each change before merging. There are no prediction questions, explain-back questions or practice exercises. The owner's focus is the overall design and the key decisions, not every detail.
@@ -30,5 +30,5 @@ There is no code yet.
 
 - Two M0 items wait for the owner: set the default branch to `main`, and protect `main`. They do not block M2.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
-- Whether using only a model API key works without a GitHub account can only be settled by running the vendor's example.
+- The vendor says that using only a model API key needs no GitHub sign-in. Confirm it by running the vendor's example. During that run, also note which outside hosts the runtime contacts.
 - Look back at decision 0006 at the end of M2: are the owner's reasons for choices and the reading of changes enough to find gaps in understanding?
