@@ -11,11 +11,13 @@ Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 - [ ] Owner sets the default branch to `main` on GitHub
 - [ ] Owner protects `main` on GitHub: changes only through a pull request
 - [ ] Owner's self-test for M0: explain the branch and pull request flow in their own words, and make one small change alone (tick the two boxes above through a pull request)
-- [ ] At the start of the next session, verify that the limits in `.claude/settings.json` work: no more than 3 subagents at once, and a subagent cannot start a subagent
+- [x] Check that the limits in `.claude/settings.json` are loaded in a new session (both variables are present)
+- [ ] Test that the concurrent limit is enforced: start four trivial subagents at once and expect the fourth to be refused. This starts more than three, so ask the owner first
+- [ ] Test that nesting is off: ask one subagent to start another and expect a refusal
 
 ## M1 Technical research
 
-Plan (proposed, needs the owner's go): three `researcher` subagents on Sonnet in parallel, then one report written by a subagent on Opus.
+Plan (approved by the owner on 2026-11-23): three `researcher` subagents on Sonnet in parallel, then one report written by a subagent on Opus.
 
 - [ ] Researcher 1, GitHub Copilot SDK basics: setup with your own model API key, the Python API, streaming output, current limits and preview status
 - [ ] Researcher 2, GitHub Copilot SDK for several users: session persistence and resume, isolation between users, deployment shapes (one runtime per user or a shared one)
@@ -28,7 +30,7 @@ Plan (proposed, needs the owner's go): three `researcher` subagents on Sonnet in
 
 Goal: a simple frontend and backend; chat with a model through an API key; several users; several conversations per user. The plan is written at the end of M1.
 
-Proposed first task: set up the automatic checks together with the scaffolding, before any feature code. This covers linters, type checks, tests, CI on pull requests, a hook that runs the checks before a session ends, and a check that every path in the document map exists.
+First task (approved by the owner on 2026-11-23): set up the automatic checks together with the scaffolding, before any feature code. This covers linters, type checks, tests, CI on pull requests, a hook that runs the checks before a session ends, and a check that every path in the document map exists.
 
 ## Later
 

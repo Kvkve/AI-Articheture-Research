@@ -35,4 +35,4 @@ A brief states: the goal; which documents to read first; the acceptance criteria
 ## Session start and end
 
 - Start: read `docs/status.md` and `docs/tasks.md`.
-- End: rewrite `docs/status.md`, commit, and push.
+- End: rewrite `docs/status.md`, commit, and push. Write the status as it will be once the session's pull request is merged, because the next session reads it from `main`.
