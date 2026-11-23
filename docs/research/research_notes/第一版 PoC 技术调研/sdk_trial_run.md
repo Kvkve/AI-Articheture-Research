@@ -82,6 +82,7 @@ Two more points from [API and data retention](https://platform.claude.com/docs/e
 
 - Zero data retention is a separate arrangement that an organization requests from the vendor's sales team. A new personal account does not have it.
 - That page says "Conversation content (your prompts and Claude's outputs) is not retained by default". The privacy center page says "within 30 days". The two pages do not say the same thing. For planning, assume up to 30 days.
+- The privacy center page also says "for Covered Models, we require limited data retention and review as a part of our safety work." The API and data retention page lists the Covered Models. `claude-opus-5-5` is not on that list.
 
 So with the default settings a request may be processed outside the United States, and it may be kept for up to 30 days. Neither matters for this trial, which sent two test sentences. Both matter later, if real user text is sent.
 
@@ -109,8 +110,9 @@ So with the default settings a request may be processed outside the United State
    - User message: a `<current_datetime>` line, a blank line, then the user's text. The last user message carries a prompt-cache marker.
    - The runtime chose the thinking, effort, output limit and caching settings itself. The trial script set none of them. Whether the application can change them was not tested.
 3. Events with a real model.
-   - First turn: 16 `assistant.reasoning_delta`, one `assistant.reasoning`, 7 `assistant.message_delta`, one `assistant.message`, then `session.idle`. The reasoning events carry a summary of the model's thinking.
-   - Second turn: no reasoning events, 3 `assistant.message_delta`, one `assistant.message`, then `session.idle`.
+   - First turn, among other events: 16 `assistant.reasoning_delta`, 7 `assistant.message_delta`, one `assistant.message`, one `assistant.reasoning`, then `session.idle`. The reasoning events carry a summary of the model's thinking. The first reasoning piece arrived before the first text piece.
+   - Second turn, among other events: no reasoning events, 3 `assistant.message_delta`, one `assistant.message`, then `session.idle`.
+   - Each turn also brought `assistant.streaming_delta` events (23 and 3) and 9 events that the Python SDK reported as type "unknown".
    - A chat interface must decide what to do with the reasoning events: show them, or ignore them.
 4. Timing, as the runtime recorded it.
    - First turn: 3.0 seconds in total. The first piece arrived after 3.0 seconds. The reasoning pieces and the text pieces all arrived within about 12 milliseconds at the end. So the user would see nothing for 3 seconds and then the whole answer at once.
@@ -118,7 +120,7 @@ So with the default settings a request may be processed outside the United State
    - `client.start()` took 0.04 seconds and `create_session` took 0.23 seconds.
 5. Tokens and cost.
    - First turn: 95 input tokens, 113 output tokens. 83 of the output tokens were reasoning.
-   - Second turn: 257 input tokens, 13 output tokens. The request body grew from 622 to 2,237 bytes. The input grew because the history is sent again, and the history includes the reasoning block of the first turn. A replay of the stored conversation against the stand-in showed that block in the assistant message: 178 characters of reasoning text and a signature of 1,100 characters.
+   - Second turn: 257 input tokens, 13 output tokens. The request body grew from 622 to 2,237 bytes. The input most likely grew because the history is sent again, including the reasoning block of the first turn. This is an inference: the body of the real second request was not recorded. It is supported by a replay of the stored conversation against the stand-in. There the runtime sent the first assistant message with that block: 178 characters of reasoning text and a signature of 1,100 characters.
    - Total: 352 input and 126 output tokens. At $4 and $20 per million tokens for Claude Opus 5.5, that is about $0.004. Prices from the vendor's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-23.
    - The runtime reports `cost: 0.0` for a BYOK provider. The application must work out cost from the token counts.
    - The cache counts were 0 in both turns. The likely reason is that the prompt is shorter than the provider's minimum for caching. This is an inference and was not checked.
@@ -127,24 +129,24 @@ So with the default settings a request may be processed outside the United State
    - the user's text in two forms, as typed and with the date line added;
    - the system prompt;
    - the assistant's text;
-   - the summary of the model's reasoning, and an opaque reasoning block that is sent back to the provider on the next turn;
+   - the summary of the model's reasoning, and an opaque reasoning block. The replay showed that the runtime sends this block back with the history;
    - usage records with token counts and timings;
    - the working directory of the process.
    - The key was in none of the files.
    - `get_events()` returned 6 events after the first turn, among them the user message and the assistant message.
 7. Outside connections during the real run, about five seconds:
-   - one TCP connection to `160.79.104.10` port 443, the address that `api.anthropic.com` resolved to at the time. Both requests used it;
-   - one DNS socket to `8.8.8.8` port 53. The names asked for were not recorded;
-   - four connections to the local name service socket `/var/run/nscd/socket`, which is not a network connection;
+   - one TCP connection to `160.79.104.10` port 443. A lookup of `api.anthropic.com` made less than a minute before the run returned this address. The lookup inside the run was not recorded. There was only one such connection, so both requests presumably used it;
+   - one DNS socket to `8.8.8.8` port 53, a public DNS server. The names asked for were not recorded;
+   - four attempts to reach the local name service socket `/var/run/nscd/socket`. All failed because the socket does not exist. It is not a network connection;
    - nothing through the logging proxy.
-   - So this run made no connection to a host of the SDK's vendor. As before, this covers a short run with no errors.
+   - So apart from the DNS lookup, the only outside connection was to the provider's address. As before, this covers a short run with no errors.
 8. `get_auth_status()` returned "Not authenticated", as in the first run. So a real provider also works with no GitHub sign-in.
 9. Memory of the Python process: 77 MB before start, 130 MB after `client.start()`, 163 MB with one session, 185 MB at the end.
 
 ### What this changes
 
 - "A real model provider" moves from "not tested" to "worked in one run, with Anthropic and one model".
-- The Anthropic BYOK bugs listed in the basics note did not appear. All expected session events arrived (issue #1064). The output limit sent was 48,000 and not 8,192 (issue #955).
+- Two closed Anthropic BYOK bugs from the basics note did not appear in this run. The message, reasoning and idle events arrived (issue #1064, known by its title only). The output limit sent was 48,000 and not 8,192 (issue #955). Whether cache counts are filled (issue #1073) could not be judged, because both counts were 0. Compaction (issue #1072) was not tested.
 - New: the runtime turns on thinking, an effort level and prompt caching by itself.
 - New: with a real model the first answer can arrive all at once after a wait, even with streaming on.
 - New: the stored file keeps the summary of the model's reasoning next to the messages.
