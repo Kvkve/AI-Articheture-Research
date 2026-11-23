@@ -1,4 +1,4 @@
-# Open-source components a small PoC could borrow (research note, M1)
+# Open-source components a small PoC could borrow (research note)
 
 Access date for every source: 2026-11-23 (US Eastern Time). Researcher 3 of 3.
 

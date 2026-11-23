@@ -1,6 +1,6 @@
 # GitHub Copilot SDK for several users
 
-Researcher 2 of 3, milestone M1. Access date for all sources: 2026-11-23 (US Eastern Time).
+Researcher 2 of 3, technical research for the first PoC. Access date for all sources: 2026-11-23 (US Eastern Time).
 
 ## Method note
 

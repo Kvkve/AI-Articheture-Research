@@ -36,7 +36,7 @@ Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and 
 
 ## Language
 
-Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words.
+Files in this repository are in English. Two kinds are in Chinese: the owner's learning notes in `docs/learning/`, and research reports written for the owner to read. Conversation with the owner is in Chinese. Explain each rule or decision to the owner in Chinese before asking for approval. Write English in short sentences with common words. Do not make up abbreviations or short labels for stages, tasks or parts of the system. Use plain names.
 
 ## Document map
 

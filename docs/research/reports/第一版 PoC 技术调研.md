@@ -2,11 +2,11 @@
 
 调研结论是：计划中的代理层（agent layer，即后端里负责"把用户的话交给模型、管理多轮对话、调用工具"的那一层）可以用。它就是 GitHub Copilot SDK，现在正在改名为 Microsoft Copilot SDK。第一版 PoC 由 React 前端、Python FastAPI 后端、多个用户和每人多段对话组成。按厂商文档，这一版可以建在它上面：只用项目自己的模型 API 密钥（BYOK）时，不需要 Copilot 订阅【厂商】；Python 有官方 BYOK 示例【厂商】；回答可以一段一段地流式产出【厂商】。不过，README 里"它驱动 Copilot CLI 作为运行时"这句话已经过时。从 2026 年 11 月的 2.0 版起，运行时默认直接加载进我们自己的 Python 进程。主要风险有五条。第一，变化快：8 个月里接口大改了三轮，2.0.1 版发布才 5 天，包名也换了，PyPI 上仍标着 "Alpha"。第二，SDK 不区分用户，用户隔离全靠应用自己做。第三，BYOK 相关的缺陷报告不少。第四，引擎（运行时）本身的许可证、是否开源、是否向厂商回传数据，读过的官方页面都没有写明；README 说 BYOK 不需要 GitHub 认证，但还没有实际运行验证过（主代理补查）。第五，对话历史存放在运行时所在机器的磁盘文件里，而给界面"读回历史消息"的方法没有核实。另外，三份笔记都没有调研 SDK 以外的替代方案，所以"用 SDK"和"先用普通模型客户端"哪个更好，目前没有研究支撑。
 
-**阅读说明。** 所有来源的访问日期都是 2026-11-23（美国东部时间）。正文用四种标签标明证据强弱：【实测】指测量得到的数据，例如发布日期、元数据或某人实际测出的内存数字；【厂商】指 SDK 或库的作者对自己产品的说法；【经验】指某一个人或某一个团队的报告，例如一条 issue；【推断】指研究笔记或本报告自己的推理，没有直接来源。只在搜索结果摘要里看到、没有打开原文的内容，标"仅见摘要"；笔记标为未核实的，标"未核实"。研究笔记读网页时用的抓取工具会先由模型把网页摘要一遍，所以文中引文可能和原文措辞略有不同。本报告只使用三份研究笔记（[基础](../research_notes/M1%20技术调研/copilot_sdk_basics.md)、[多用户](../research_notes/M1%20技术调研/copilot_sdk_multi_user.md)、[开源组件](../research_notes/M1%20技术调研/open_source_components.md)）里的内容。写作时没有另外抓取任何网页。报告写完后，主代理在 2026-11-23 又读了四个官方页面（README、in-process-runtime.md、byok.md、SUPPORT.md），更正之处在文中标为“主代理补查”。第 12 节是主代理做的一次实际试跑，它更新了第 3、4、11 节里的几处“未核实”。
+**阅读说明。** 所有来源的访问日期都是 2026-11-23（美国东部时间）。正文用四种标签标明证据强弱：【实测】指测量得到的数据，例如发布日期、元数据或某人实际测出的内存数字；【厂商】指 SDK 或库的作者对自己产品的说法；【经验】指某一个人或某一个团队的报告，例如一条 issue；【推断】指研究笔记或本报告自己的推理，没有直接来源。只在搜索结果摘要里看到、没有打开原文的内容，标"仅见摘要"；笔记标为未核实的，标"未核实"。研究笔记读网页时用的抓取工具会先由模型把网页摘要一遍，所以文中引文可能和原文措辞略有不同。本报告只使用三份研究笔记（[基础](../research_notes/第一版%20PoC%20技术调研/copilot_sdk_basics.md)、[多用户](../research_notes/第一版%20PoC%20技术调研/copilot_sdk_multi_user.md)、[开源组件](../research_notes/第一版%20PoC%20技术调研/open_source_components.md)）里的内容。写作时没有另外抓取任何网页。报告写完后，主代理在 2026-11-23 又读了四个官方页面（README、in-process-runtime.md、byok.md、SUPPORT.md），更正之处在文中标为“主代理补查”。第 12 节是主代理做的一次实际试跑，它更新了第 3、4、11 节里的几处“未核实”。
 
 ## 1. 结论摘要
 
-- **能不能用：能，但要固定版本。** BYOK、Python、流式输出三项都有厂商文档和示例【厂商】。没有找到会挡住第一版 PoC 的硬性障碍【推断】（[基础笔记](../research_notes/M1%20技术调研/copilot_sdk_basics.md)）。
+- **能不能用：能，但要固定版本。** BYOK、Python、流式输出三项都有厂商文档和示例【厂商】。没有找到会挡住第一版 PoC 的硬性障碍【推断】（[基础笔记](../research_notes/第一版%20PoC%20技术调研/copilot_sdk_basics.md)）。
 - **README 需要更新的地方：** 运行时已经不是 CLI 进程，默认在我们自己的进程里运行（见第 2 节）。
 - **最需要自己动手的部分：** 一张"会话归属表"（记录哪段对话属于哪个用户），每次操作前都查它；再加上同一会话的并发锁（见第 5 节）。
 - **最大的未知：** 引擎本身的许可证和是否回传数据；怎样把历史消息读出来给界面显示（见第 3、4、11 节）。
@@ -133,14 +133,14 @@ asyncio.run(main())
 
 **长对话。** 模型一次能读的文字量有上限，叫上下文窗口（context window）。SDK 有"无限会话"功能：对话快装满时在后台做压缩（compaction，把较早的内容总结成摘要），阈值可以设置，例如 0.80 和 0.95，摘要写进 `checkpoints/`【厂商】（[Python README](https://github.com/microsoft/copilot-sdk/blob/main/python/README.md)）。压缩之后，完整日志应该还留在磁盘上，这是根据文件布局推出来的，文档没有明说【推断】。
 
-**给界面读回历史，目前不清楚。** Python README 写了 `get_events()` 用于"会话历史"，但它的参数和返回格式都没有核实；也没有找到 `get_messages` 这类方法。另一份文档说，可以通过 `sessionStatePath` 直接去读 `events.jsonl`【厂商】（[Python README](https://github.com/microsoft/copilot-sdk/blob/main/python/README.md)、[session-management.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/session-management.md)）。哪种方式更适合聊天界面，未核实。文档也没有说应用该不该把消息另存一份到自己的数据库【厂商】。不过，一张记录会话 id、所属用户、标题和时间的小表，无论怎样都需要【推断】（[多用户笔记](../research_notes/M1%20技术调研/copilot_sdk_multi_user.md)）。
+**给界面读回历史，目前不清楚。** Python README 写了 `get_events()` 用于"会话历史"，但它的参数和返回格式都没有核实；也没有找到 `get_messages` 这类方法。另一份文档说，可以通过 `sessionStatePath` 直接去读 `events.jsonl`【厂商】（[Python README](https://github.com/microsoft/copilot-sdk/blob/main/python/README.md)、[session-management.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/session-management.md)）。哪种方式更适合聊天界面，未核实。文档也没有说应用该不该把消息另存一份到自己的数据库【厂商】。不过，一张记录会话 id、所属用户、标题和时间的小表，无论怎样都需要【推断】（[多用户笔记](../research_notes/第一版%20PoC%20技术调研/copilot_sdk_multi_user.md)）。
 
 ## 5. 多个用户
 
 **SDK 本身不区分用户。** 它没有"用户"或"租户"（tenant，指共用同一系统的不同客户或用户群）的概念。厂商原话是："应用负责请求路由和权限判断，SDK 和运行时只提供每个会话各自的状态、各自的认证，以及显式登记的工具"；又说"你的应用必须规定哪个用户能访问哪个会话"【厂商】（[multi-tenancy.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/setup/multi-tenancy.md)、[scaling.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/setup/scaling.md)）。
 
 **应用必须自己做的两件事：**
-1. **归属表。** 在自己的数据库里建一张表，至少包含会话 id 和所属用户 id 两列，类似 SQL 里的 `conversations(session_id PRIMARY KEY, owner_user_id, title, created_at, last_used_at)`【推断】（[多用户笔记](../research_notes/M1%20技术调研/copilot_sdk_multi_user.md)）。
+1. **归属表。** 在自己的数据库里建一张表，至少包含会话 id 和所属用户 id 两列，类似 SQL 里的 `conversations(session_id PRIMARY KEY, owner_user_id, title, created_at, last_used_at)`【推断】（[多用户笔记](../research_notes/第一版%20PoC%20技术调研/copilot_sdk_multi_user.md)）。
 2. **每次操作前先检查。** 在恢复、发送、删除，或者界面上任何指向某个会话的操作之前，先查这张表，确认当前用户就是这段对话的主人。厂商列出的常见错误里就有一条"信任客户端传来的会话 id 而不做归属检查"【厂商】（[multi-tenancy.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/setup/multi-tenancy.md)）。文档自己的示例是从会话 id 的前缀里解析出用户 id 来判断权限，文档也承认这种做法脆弱；更稳妥的是查数据库【厂商】+【推断】（[scaling.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/setup/scaling.md)）。`list_sessions()` 返回的是服务器上的全部会话，必须先用归属表过滤，才能显示给用户【推断】。
 
 **厂商的其他建议：**
@@ -166,7 +166,7 @@ asyncio.run(main())
 流式输出（streaming）指模型一边生成，浏览器一边显示，不用等整段回答写完。整条链路分三段：
 
 1. **后端从 SDK 拿事件。** 创建会话时加上 `events={"streaming": True}`，SDK 就会推送很多个 `assistant.message_delta` 事件，每个带一小段新文字 `delta_content`；最后推送一个完整的 `assistant.message`，再推送 `session.idle` 表示本轮结束【厂商】（[Python README](https://github.com/microsoft/copilot-sdk/blob/main/python/README.md)、[getting-started.md](https://github.com/microsoft/copilot-sdk/blob/main/docs/getting-started.md)）。这些是 Copilot 自己定义的事件，不是模型服务商的原始数据流，后端必须把它们翻译成浏览器能理解的格式【推断】。
-2. **经过一种传输方式（transport）送到浏览器。** 三种选择见下表【厂商，FastAPI 文档】+【推断】（[开源组件笔记](../research_notes/M1%20技术调研/open_source_components.md)）。
+2. **经过一种传输方式（transport）送到浏览器。** 三种选择见下表【厂商，FastAPI 文档】+【推断】（[开源组件笔记](../research_notes/第一版%20PoC%20技术调研/open_source_components.md)）。
 3. **浏览器拼接显示。** 前端读取数据流，把每段文字依次追加到当前消息末尾。
 
 | 传输方式 | 是什么 | FastAPI 不装额外包能做吗 | 代价 |
@@ -183,7 +183,7 @@ asyncio.run(main())
 - **assistant-ui 自己的格式：** SSE `data:` 行，或者更早的 `aui-state:` 行【厂商】（[assistant-transport](https://www.assistant-ui.com/docs/runtimes/custom/assistant-transport)）。
 - **OpenAI chat-completions 分块：** `chat.completion.chunk`，以 `data: [DONE]` 结束【厂商】（[OpenAI 参考](https://developers.openai.com/api/reference/resources/chat)）。
 
-**哪个前端库认哪种格式：** `useChat` 认 AI SDK UI 消息流，或者配上文本传输时认纯文本；assistant-ui 认 AI SDK UI 消息流或它自己的格式；CopilotKit 认 AG-UI；chatscope 和 react-markdown 不关心格式，网络部分要自己写。前四条是笔记读过文档的结论，最后一条（没有哪个组件直接认 OpenAI 分块格式）是推断（[开源组件笔记](../research_notes/M1%20技术调研/open_source_components.md)）。
+**哪个前端库认哪种格式：** `useChat` 认 AI SDK UI 消息流，或者配上文本传输时认纯文本；assistant-ui 认 AI SDK UI 消息流或它自己的格式；CopilotKit 认 AG-UI；chatscope 和 react-markdown 不关心格式，网络部分要自己写。前四条是笔记读过文档的结论，最后一条（没有哪个组件直接认 OpenAI 分块格式）是推断（[开源组件笔记](../research_notes/第一版%20PoC%20技术调研/open_source_components.md)）。
 
 ## 8. 可以借用的开源组件
 
@@ -203,7 +203,7 @@ asyncio.run(main())
 | CopilotKit / AG-UI | 代理界面加协议 | MIT / MIT（AG-UI 仅见页面） | 2026-11-23 / 日期不明 | 对纯聊天来说太多 | [仓库](https://github.com/CopilotKit/CopilotKit) |
 | react-markdown / Streamdown | 渲染 Markdown | MIT / Apache-2.0 | 日期不明 | 好：小 | [react-markdown](https://github.com/remarkjs/react-markdown)、[Streamdown](https://github.com/vercel/streamdown) |
 | LibreChat | 完整聊天应用 | MIT | v0.8.9，2026-11-17；已被 ClickHouse 收购（仅见摘要） | 只作参考；太大 | [仓库](https://github.com/danny-avila/LibreChat) |
-| Vercel `chatbot` | 完整聊天应用 | Apache-2.0 | 日期不明 | 可参考它的结构；技术栈是 Next.js | 见[开源组件笔记](../research_notes/M1%20技术调研/open_source_components.md) |
+| Vercel `chatbot` | 完整聊天应用 | Apache-2.0 | 日期不明 | 可参考它的结构；技术栈是 Next.js | 见[开源组件笔记](../research_notes/第一版%20PoC%20技术调研/open_source_components.md) |
 | Open WebUI | 完整聊天应用 | **非宽松许可：Open WebUI License**（BSD 加品牌条款，项目自称"不是 OSI 认可的开源许可证"） | v0.13.4，2026-11-17 | 不要借用代码；要用须问 owner | [LICENSE](https://raw.githubusercontent.com/open-webui/open-webui/main/LICENSE)、[说明](https://docs.openwebui.com/license/) |
 | LobeHub | 完整聊天应用 | **非宽松许可：LobeHub Community License**（分发衍生作品需要商业许可；README 徽标写的却是 Apache 2.0，两者矛盾） | 日期不明 | 不要借用；须问 owner | [LICENSE](https://raw.githubusercontent.com/lobehub/lobehub/canary/LICENSE) |
 | Chainlit | Python 聊天框架 | Apache-2.0 | **已于 2026-10-15 归档，只读** | 不要在它上面搭建 | [仓库](https://github.com/Chainlit/chainlit) |
@@ -271,7 +271,7 @@ asyncio.run(main())
 
 ## 12. 试跑结果（主代理，2026-11-23）
 
-owner 同意后，主代理在会话的隔离环境里做了一次不需要模型密钥的试跑。完整记录和脚本在[试跑笔记](../research_notes/M1%20技术调研/sdk_trial_run.md)。以下都是【实测】，但只是一台机器上的一次运行，而且用的是本机的“假模型服务”，没有调用真实的模型。
+owner 同意后，主代理在会话的隔离环境里做了一次不需要模型密钥的试跑。完整记录和脚本在[试跑笔记](../research_notes/第一版%20PoC%20技术调研/sdk_trial_run.md)。以下都是【实测】，但只是一台机器上的一次运行，而且用的是本机的“假模型服务”，没有调用真实的模型。
 
 - **不登录 GitHub 可以用。** 试跑进程里没有任何 GitHub 令牌。引擎报告“未认证”，但用自己的服务商配置照样能建会话、收到回答。
 - **流式输出和文档说的一致。** 假模型分 10 段回答，后端就收到 10 个 `assistant.message_delta`，然后是完整的 `assistant.message` 和 `session.idle`。
