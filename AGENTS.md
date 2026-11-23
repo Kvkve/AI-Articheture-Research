@@ -32,7 +32,9 @@ Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and 
 
 - `main` holds approved work. Do not push to `main` directly.
 - Do each piece of work on its own branch. When it is ready, open a pull request to `main`.
-- Only the owner merges a pull request.
+- The owner merges every pull request that changes a rule file (`AGENTS.md`, `CLAUDE.md`, anything under `.claude/`), `README.md`, a decision record, or code.
+- The main agent may merge a pull request that changes only records: files under `docs/research/` and `docs/learning/`, `docs/status.md`, and `docs/tasks.md` when the change only marks progress. A new plan or a change to acceptance criteria in `docs/tasks.md` is the owner's to merge. After merging, the main agent tells the owner what changed.
+- A pull request that holds both kinds of change is the owner's to merge. When in doubt, leave the merge to the owner.
 
 ## Language
 
