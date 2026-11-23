@@ -1,6 +1,6 @@
 # 0003 Learning: the owner joins each decision, writes some parts by hand, and self-tests at each milestone
 
-- Status: Accepted
+- Status: Superseded by [0006](0006-learning-through-real-work.md)
 - Date: 2026-11-23
 
 ## Background

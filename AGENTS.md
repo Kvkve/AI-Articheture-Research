@@ -76,4 +76,4 @@ Check commands and language-specific rules will be added here with the first cod
 
 A task is done when all three hold: it meets the acceptance criteria written for it in `docs/tasks.md`; all automatic checks pass; a party that did not write it has reviewed it.
 
-A milestone is done when, in addition, the owner can explain the finished part without looking at the conversation, and can make one small change to it alone.
+A milestone is done when, in addition, the owner has read its changes and every question the owner asked about them has been answered.
