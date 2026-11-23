@@ -1,6 +1,8 @@
-# Trial run of the Copilot SDK without a model key (2026-11-23)
+# Trial runs of the Copilot SDK (2026-11-23)
 
-The main agent ran this trial in the session's sandbox container. The owner agreed to it in conversation. Dates and times are US Eastern Time unless a log line says otherwise.
+The main agent ran these trials in a session's sandbox container. The owner agreed to each in conversation. Dates and times are US Eastern Time unless a log line says otherwise.
+
+There are three runs. The first two use a local stand-in for the model provider and no model key. The third calls a real model. It is under "Third run: a real model provider".
 
 ## Method
 
@@ -61,16 +63,104 @@ Same setup, three sessions, one prompt each. The stand-in provider recorded the 
 
 So with "replace" the application decides the whole system prompt. The basics note records the vendor's warning that "replace" also removes the SDK's own guardrails, so the application's prompt must carry any rules it needs.
 
+## Third run: a real model provider
+
+The owner asked for this run and supplied a Claude API key in the environment variable `POC_MODEL_API_KEY`. The trial process read the key from the variable. The key was never printed. After the run, a search of every file the run wrote found no copy of the key.
+
+### The provider's data terms, checked before the run
+
+The provider is Anthropic. An API key comes under its commercial terms. The main agent read all four pages on 2026-11-23 and checked each quoted sentence against the page text. They are vendor claims.
+
+| Question | What the page says | Source |
+|---|---|---|
+| How long are requests kept? | "For Anthropic API users, we automatically delete inputs and outputs on our backend within 30 days of receipt or generation". Exceptions: a service with longer retention under the customer's control, such as the Files API; a separate agreement, such as zero data retention; enforcing the usage policy; the law. | [Privacy center: How long do you store my organization's data?](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data), dated 2026-07-01 |
+| What if a request is flagged? | "We retain inputs and outputs for up to 2 years and trust and safety classification scores for up to 7 years if your chat is flagged by our automated trust and safety systems as violating our Usage Policy." | Same page |
+| Are requests used for training? | "Anthropic may not train models on Customer Content from Services." The customer "retains all rights to its Inputs" and "owns its Outputs". | [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms), section B, effective 2025-06-17 |
+| Where are requests processed? | The request setting `inference_geo` has two values. "global" is the default: "Inference may run in any available geography for optimal performance and availability." "us" means "Inference runs only in US-based infrastructure" and costs 1.1 times the standard price. Data at rest follows the workspace setting, and "us" is its only value. | [Data residency](https://platform.claude.com/docs/en/manage-claude/data-residency), undated |
+
+Two more points from [API and data retention](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention) (undated):
+
+- Zero data retention is a separate arrangement that an organization requests from the vendor's sales team. A new personal account does not have it.
+- That page says "Conversation content (your prompts and Claude's outputs) is not retained by default". The privacy center page says "within 30 days". The two pages do not say the same thing. For planning, assume up to 30 days.
+
+So with the default settings a request may be processed outside the United States, and it may be kept for up to 30 days. Neither matters for this trial, which sent two test sentences. Both matter later, if real user text is sent.
+
+### Method
+
+- Same machine type as the first run. Python 3.12 in a fresh virtual environment, `microsoft-copilot-sdk==2.0.1`, runtime 1.0.114.
+- The session ran on the owner's Default cloud environment. The key variable was set there.
+- Step 1, a dry run with no real key. A new local stand-in answered on `127.0.0.1` in the Anthropic Messages format. The trial process had a dummy key and did not have the real key in its environment. The purpose was to see what the runtime sends before anything real was sent.
+- Step 2, the real run. Provider type `anthropic`, address `https://api.anthropic.com`, model `claude-opus-5-5`, system prompt replaced with a short text of our own, no tools, streaming on. One turn, disconnect, resume, then a second turn that asks about the first.
+- The model was the main agent's assumption for a trial. The owner has not chosen a model for the product.
+- The trial process ran with a small environment: the program path, the key variable, an empty home directory, the proxy settings and the certificate file.
+- Outbound traffic: a logging proxy stood in front of the container's own proxy and recorded the host of each connection. `strace` recorded every `connect` call. The container's settings send traffic for `api.anthropic.com` directly and not through the proxy, so that connection appears in `strace` as an address.
+- Evidence of the kind "measured data, one run on one machine, one model".
+
+### Results
+
+1. It worked. Both turns returned a streamed answer from the real model. No error event arrived.
+   - First turn. Prompt: "Please remember the word 'maple'. Then tell me what 2+2 is." Answer: `I'll keep "maple" in mind for this conversation, and 2+2 is 4.`
+   - Second turn, after disconnect and resume. Prompt: "Which word did I ask you to remember?" Answer: `You asked me to remember "maple."` So resume replays the history to a real provider too.
+2. What the runtime sends. This comes from the dry run. The first real request had the same body size as the first dry-run request, 622 bytes.
+   - `POST /v1/messages`. The key goes in the `x-api-key` header.
+   - Other headers: `anthropic-version: 2023-06-01`; `anthropic-beta: thinking-binding-controls-2026-08-01,mid-conversation-output-config-2026-07-01`; `user-agent: Anthropic/JS 0.94.0`; a set of `x-stainless-*` headers; `x-initiator: user`; `x-interaction-type: conversation-user`.
+   - Body settings: `max_tokens: 48000`, `temperature: 1`, `thinking: {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}`, `output_config: {"effort": "medium"}`, `stream: true`.
+   - System prompt: exactly our own text of 91 characters, with a prompt-cache marker. No built-in prompt.
+   - User message: a `<current_datetime>` line, a blank line, then the user's text. The last user message carries a prompt-cache marker.
+   - The runtime chose the thinking, effort, output limit and caching settings itself. The trial script set none of them. Whether the application can change them was not tested.
+3. Events with a real model.
+   - First turn: 16 `assistant.reasoning_delta`, one `assistant.reasoning`, 7 `assistant.message_delta`, one `assistant.message`, then `session.idle`. The reasoning events carry a summary of the model's thinking.
+   - Second turn: no reasoning events, 3 `assistant.message_delta`, one `assistant.message`, then `session.idle`.
+   - A chat interface must decide what to do with the reasoning events: show them, or ignore them.
+4. Timing, as the runtime recorded it.
+   - First turn: 3.0 seconds in total. The first piece arrived after 3.0 seconds. The reasoning pieces and the text pieces all arrived within about 12 milliseconds at the end. So the user would see nothing for 3 seconds and then the whole answer at once.
+   - Second turn: 1.2 seconds in total. The first piece arrived after 0.6 seconds.
+   - `client.start()` took 0.04 seconds and `create_session` took 0.23 seconds.
+5. Tokens and cost.
+   - First turn: 95 input tokens, 113 output tokens. 83 of the output tokens were reasoning.
+   - Second turn: 257 input tokens, 13 output tokens. The request body grew from 622 to 2,237 bytes. The input grew because the history is sent again, and the history includes the reasoning block of the first turn. A replay of the stored conversation against the stand-in showed that block in the assistant message: 178 characters of reasoning text and a signature of 1,100 characters.
+   - Total: 352 input and 126 output tokens. At $4 and $20 per million tokens for Claude Opus 5.5, that is about $0.004. Prices from the vendor's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-23.
+   - The runtime reports `cost: 0.0` for a BYOK provider. The application must work out cost from the token counts.
+   - The cache counts were 0 in both turns. The likely reason is that the prompt is shorter than the provider's minimum for caching. This is an inference and was not checked.
+   - The runtime's limits for this model: 128,000 prompt tokens and 48,000 output tokens.
+6. What is stored on disk. `events.jsonl` held 15 events as plain text:
+   - the user's text in two forms, as typed and with the date line added;
+   - the system prompt;
+   - the assistant's text;
+   - the summary of the model's reasoning, and an opaque reasoning block that is sent back to the provider on the next turn;
+   - usage records with token counts and timings;
+   - the working directory of the process.
+   - The key was in none of the files.
+   - `get_events()` returned 6 events after the first turn, among them the user message and the assistant message.
+7. Outside connections during the real run, about five seconds:
+   - one TCP connection to `160.79.104.10` port 443, the address that `api.anthropic.com` resolved to at the time. Both requests used it;
+   - one DNS socket to `8.8.8.8` port 53. The names asked for were not recorded;
+   - four connections to the local name service socket `/var/run/nscd/socket`, which is not a network connection;
+   - nothing through the logging proxy.
+   - So this run made no connection to a host of the SDK's vendor. As before, this covers a short run with no errors.
+8. `get_auth_status()` returned "Not authenticated", as in the first run. So a real provider also works with no GitHub sign-in.
+9. Memory of the Python process: 77 MB before start, 130 MB after `client.start()`, 163 MB with one session, 185 MB at the end.
+
+### What this changes
+
+- "A real model provider" moves from "not tested" to "worked in one run, with Anthropic and one model".
+- The Anthropic BYOK bugs listed in the basics note did not appear. All expected session events arrived (issue #1064). The output limit sent was 48,000 and not 8,192 (issue #955).
+- New: the runtime turns on thinking, an effort level and prompt caching by itself.
+- New: with a real model the first answer can arrive all at once after a wait, even with streaming on.
+- New: the stored file keeps the summary of the model's reasoning next to the messages.
+- New: the SDK does not work out cost under BYOK.
+
 ## Not tested
 
-- A real model provider, and so real latency, token limits and the BYOK bugs listed in the basics note.
+- Latency over many runs, long answers, token limits, and errors from the provider such as a wrong key or a rate limit. Other models and other providers. The open BYOK bugs listed in the basics note.
+- Changing or turning off the thinking, effort, output limit and caching settings that the runtime chooses.
 - Tools, permission requests, compaction, two requests on one session at the same time. The "customize" mode of `system_message`, which changes single sections of the built-in prompt.
 - Whether the runtime contacts the vendor after errors or over a longer time. `error_reporting=enabled` suggests it may.
 - The other connection types (child process, standalone server).
 
-## The trial script
+## The trial script of the first run
 
-The script below is the whole trial. The stand-in provider and the logging proxy were two more throwaway scripts of about 80 and 50 lines. They are described under "Method" and are not kept.
+The script below is the whole first trial. The stand-in provider and the logging proxy were two more throwaway scripts of about 80 and 50 lines. They are described under "Method" and are not kept.
 
 ```python
 """Trial run of the vendor's BYOK flow against a local stand-in provider.
@@ -163,6 +253,147 @@ async def main():
     await session2.disconnect()
     await client.stop()
     print(f"[9] stopped; RSS {rss_mb()} MB")
+
+asyncio.run(main())
+```
+
+## The trial script of the third run
+
+The script below is the whole third trial. It reads the provider address, the model name and the name of the key variable from the environment. The dry run and the real run used the same script with different values. The new stand-in for the Anthropic Messages format and the logging proxy were two more throwaway scripts of about 90 and 50 lines. They are described under "Method" of the third run and are not kept.
+
+```python
+"""Trial run of the vendor's BYOK flow against the Anthropic Messages API.
+Throwaway experiment. Not project code.
+
+Settings come from the environment, so no address, key or model name is fixed here:
+  TRIAL_BASE      directory for the SDK's session files
+  TRIAL_BASE_URL  address of the model provider
+  TRIAL_MODEL     model name sent to the provider
+  TRIAL_KEY_ENV   name of the variable that holds the key
+"""
+import asyncio, builtins, os, time
+from collections import Counter
+from copilot import CopilotClient, RuntimeConnection
+
+KEY = os.environ[os.environ["TRIAL_KEY_ENV"]]
+BASE_URL = os.environ["TRIAL_BASE_URL"]
+MODEL = os.environ["TRIAL_MODEL"]
+SID = "trial-user1-conv1"
+SYSTEM_TEXT = ("You are a helpful assistant inside a chat product under test. "
+               "Answer in one short sentence.")
+
+
+def print(*args, **kwargs):
+    # The key must never reach the output, even inside an error message.
+    builtins.print(*[str(a).replace(KEY, "[key removed]") for a in args], **kwargs)
+
+
+def rss_mb():
+    for line in open("/proc/self/status"):
+        if line.startswith("VmRSS"):
+            return round(int(line.split()[1]) / 1024)
+
+
+def reject_everything(request, invocation):
+    # No tool is offered. If the runtime asks anyway, refuse.
+    raise RuntimeError("no tool is allowed in this trial")
+
+
+def session_options():
+    return dict(
+        model=MODEL,
+        permissions={"on_request": reject_everything},
+        github={"capi": {"enabled": False}},
+        inference={"default_provider": "byok", "providers": [{
+            "name": "byok", "type": "anthropic", "base_url": BASE_URL, "api_key": KEY}]},
+        events={"streaming": True},
+        tools={"available_tools": []},
+        system_message={"mode": "replace", "content": SYSTEM_TEXT},
+    )
+
+
+def type_of(ev):
+    return ev.type.value if hasattr(ev.type, "value") else str(ev.type)
+
+
+async def one_turn(session, prompt):
+    seen, deltas, done = [], [], asyncio.Event()
+    final, marks, extra = {}, {}, []
+
+    def on_event(ev):
+        t = type_of(ev)
+        seen.append(t)
+        if t == "assistant.message_delta":
+            marks.setdefault("first_delta", time.time())
+            deltas.append(getattr(ev.data, "delta_content", None))
+        elif t == "assistant.message":
+            final["content"] = getattr(ev.data, "content", None)
+        elif t == "session.error":
+            final["error"] = str(ev.data)[:1500]
+        elif t == "session.idle":
+            done.set()
+        if t in ("assistant.usage", "session.usage_info", "model.call_start",
+                 "model.call_end", "model.call_failure", "session.warning"):
+            extra.append(f"{t}: {str(ev.data)[:900]}")
+
+    off = session.on(on_event)
+    t0 = time.time()
+    print(f"   prompt: {prompt!r}")
+    await session.send(prompt)
+    try:
+        await asyncio.wait_for(done.wait(), timeout=120)
+    except asyncio.TimeoutError:
+        print("   TIMEOUT waiting for session.idle")
+    off()
+    total = time.time() - t0
+    first = marks.get("first_delta")
+    print(f"   took {total:.2f}s; first piece after "
+          f"{(first - t0):.2f}s" if first else f"   took {total:.2f}s; no piece arrived")
+    print(f"   event counts: {dict(Counter(seen))}")
+    print(f"   delta pieces ({len(deltas)}): {deltas}")
+    print(f"   final message: {final}")
+    for line in extra:
+        print(f"   {line}")
+
+
+async def main():
+    print(f"[0] provider {BASE_URL}, model {MODEL}; before start: RSS {rss_mb()} MB")
+    conn = RuntimeConnection.for_default(base_directory=os.environ["TRIAL_BASE"])
+    client = CopilotClient(mode="empty", runtime=conn)
+    t0 = time.time(); await client.start()
+    print(f"[1] client.start() ok in {time.time()-t0:.2f}s; RSS {rss_mb()} MB")
+    for name in ("get_status", "get_auth_status"):
+        try:
+            print(f"[2] {name}: {await getattr(client, name)()}")
+        except Exception as e:
+            print(f"[2] {name} failed: {type(e).__name__}: {str(e)[:300]}")
+
+    t0 = time.time()
+    session = await client.create_session(session_id=SID, **session_options())
+    print(f"[3] create_session ok in {time.time()-t0:.2f}s; RSS {rss_mb()} MB")
+    print("[4] first turn")
+    await one_turn(session, "Please remember the word 'maple'. Then tell me what 2+2 is.")
+
+    evs = await session.get_events()
+    print(f"[5] get_events(): {len(evs)} events")
+    for ev in evs:
+        t = type_of(ev)
+        if t in ("user.message", "assistant.message"):
+            print(f"     {t}: {getattr(ev.data, 'content', None)!r}")
+    await session.disconnect()
+    print("[6] disconnected")
+
+    metas = await client.list_sessions()
+    print(f"[7] list_sessions(): {[m.session_id for m in metas]}")
+
+    # The key is passed again on resume. Leaving it out was not tested.
+    session2 = await client.resume_session(SID, **session_options())
+    print("[8] resumed; second turn")
+    await one_turn(session2, "Which word did I ask you to remember?")
+    await session2.disconnect()
+    await client.stop()
+    print(f"[9] stopped; RSS {rss_mb()} MB")
+
 
 asyncio.run(main())
 ```
