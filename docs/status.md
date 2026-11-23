@@ -5,33 +5,39 @@ Updated 2026-11-23 (US Eastern Time).
 ## Where the work stands
 
 - M0: the rules are set. Both subagent limit tests are done. The concurrent limit of three is enforced. A subagent has no tool for starting another subagent.
-- M1 research is finished and checked. Three notes are in `docs/research/research_notes/M1 技术调研/`. The report is `docs/research/reports/M1 技术调研.md`. The main agent had 19 of the cited pages read again and recorded the result at the end of the notes.
-- What the research found, in short:
-  - The planned agent SDK is being renamed from GitHub Copilot SDK to Microsoft Copilot SDK. Version 2 (2026-11-18) no longer needs the Copilot CLI. Its runtime is a separate component from the same vendor. The Python package downloads it and loads it inside the application's own process by default.
-  - Using only the project's own model API key needs no Copilot subscription and no GitHub sign-in, by the vendor's documents. No one has confirmed this by a run yet. No page gives a price for the SDK or the runtime. The license of the runtime itself, and whether it sends data to the vendor, are not stated on the official pages read.
-  - The SDK keeps each conversation as a folder of files on the disk of the machine that runs the runtime. It has no notion of a user. The application must keep its own table of which user owns which conversation and check it before every action.
+- M1 research is finished and checked. Three research notes and one trial note are in `docs/research/research_notes/M1 技术调研/`. The report is `docs/research/reports/M1 技术调研.md`. Section 12 of the report holds the trial results.
+- What the research and the trial found, in short:
+  - The planned agent SDK is being renamed from GitHub Copilot SDK to Microsoft Copilot SDK. Version 2 (2026-11-18) no longer needs the Copilot CLI program. Its runtime is a separate binary from the same vendor. The Python package downloads it from the release packages of the Copilot CLI repository and loads it inside the application's own process by default.
+  - Trial, 2026-11-23: with no GitHub sign-in and a local stand-in for the model provider, the SDK started, streamed an answer, stored the conversation on disk, resumed it, and read the history back with `get_events()`. No outside host was contacted during the run. No real model has been called yet.
+  - The runtime adds its own system prompt of about 7,000 characters to every request. It describes a coding agent named GitHub Copilot. A chat product must replace or adjust it through the SDK's `system_message` option. This is not tried yet.
+  - `mode="empty"`, which the vendor advises for shared use, demands an explicit storage directory and an explicit tool list for each session.
+  - The SDK has no notion of a user. The application must keep its own table of which user owns which conversation and check it before every action.
+  - No page gives a price for the SDK or the runtime. The runtime bundle has no license file for the runtime itself.
   - The SDK changes fast. Versions must be pinned.
 - The working rules changed on 2026-11-23 at the owner's request:
   - Teaching: no prediction questions, explain-back questions or practice exercises. The owner learns through real work, and the focus is the overall design and the key decisions. The rules are in `CLAUDE.md` under "Teaching".
-  - Decision records are only for product design choices that are costly to change. The six earlier records held working rules and were removed. There is no decision record yet. The next number is 0007.
-- Choice (a), the agent layer: the owner leans to using the SDK in the first PoC and trying it first. No decision record is written yet. Write it after the trial run, with the result.
-- The owner asked whether the model provider keeps the requests. The answer given was general and marked unverified. The provider's actual terms must be checked once the provider is chosen.
-- The M2 plan is not written. Choices (b) to (f) in section 10 of the report still wait for the owner.
+  - Decision records are only for product design choices that are costly to change. There is no decision record yet. The next number is 0007.
+- Choice (a), the agent layer: the owner leans to using the SDK and wanted a trial first. The first half of the trial passed. No decision record is written yet.
+- Model provider: the owner asked whether a Claude API key can be used. The SDK lists Anthropic as a provider type. The owner would need an API key from the Claude developer platform, which is billed by use and is separate from a Claude subscription. Not decided yet.
+- The owner does not want a pull request yet. All work of this session is on the branch `claude/gallant-brown-mm3dcs` and not on `main`.
 
 ## Next step
 
-1. Find out from the owner which model provider the project will use. It is needed for a real model call and for checking that provider's data terms (how long requests are kept, whether they are used for training, where they are processed).
-2. If the owner agrees, do a trial run of the vendor's example. Part 1 needs no key: install the SDK, start the runtime with no GitHub sign-in, and note which outside hosts it contacts. Part 2 needs the key: one chat turn with streaming, then read the history back. Record the result in the basics note and the report. Then write decision record 0007 on the agent layer, with the owner's reason.
-3. Take the owner through choices (b) to (f), one or two at a time, with options, costs and a recommendation.
-4. Correct the sentence about the runtime in `README.md`.
-5. Write the M2 plan and acceptance criteria in `docs/tasks.md` for the owner to review.
+1. Get the owner's choice of model provider. Then check that provider's data terms: how long requests are kept, whether they are used for training, where they are processed.
+2. Second half of the trial: one chat turn against the real provider. The key goes in through the secure form, never through the conversation. Also try the `system_message` option, because the default system prompt does not fit a chat product.
+3. Write decision record 0007 on the agent layer, with the owner's reason in one sentence.
+4. Take the owner through choices (b) to (f) in section 10 of the report, one or two at a time, with options, costs and a recommendation.
+5. Correct the sentence about the runtime in `README.md`.
+6. Write the M2 plan and acceptance criteria in `docs/tasks.md` for the owner to review.
 
 ## How to run and verify
 
-There is no code yet.
+There is no project code yet. The trial script is printed at the end of `docs/research/research_notes/M1 技术调研/sdk_trial_run.md`.
 
 ## Open items
 
 - Two M0 items wait for the owner: set the default branch to `main`, and protect `main`. They do not block M2.
+- A new session starts from `main`. Until this branch is merged, a new session will not see this session's work unless it is started on this branch.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
-- The conversation content is kept as plain files on disk by the SDK. Whether these files can be encrypted was not found.
+- Using a Copilot subscription in place of a model key is a documented sign-in method of the SDK. It is not tested, because it needs a subscription. The vendor advises one GitHub token per user, not a shared one.
+- The SDK keeps the conversation content as plain files on disk. Whether these files can be encrypted was not found.

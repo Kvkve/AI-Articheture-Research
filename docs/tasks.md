@@ -24,6 +24,8 @@ Plan (approved by the owner on 2026-11-23): three `researcher` subagents on Sonn
 - [x] Researcher 3, open-source components to borrow: frontend and backend scaffolding, chat interface components, conventions for streaming between backend and frontend; the license and maintenance state of each. Notes: `docs/research/research_notes/M1 技术调研/open_source_components.md`
 - [x] One report in Chinese for the owner, with sources: `docs/research/reports/M1 技术调研.md`
 - [x] First concept lesson for the owner, built on the report and starting from the data model: what an API is, what a session is, what streaming is. Given in conversation on 2026-11-23, with the owner's follow-up questions answered. The owner's change to the teaching rules on the same day withdrew its explain-back questions and its exercise
+- [x] Trial run of the SDK without a model key, against a local stand-in provider (2026-11-23). Notes: `docs/research/research_notes/M1 技术调研/sdk_trial_run.md`
+- [ ] Trial run with a real model provider: one chat turn, once the owner has chosen the provider and supplied a key through the secure form
 - [ ] Write the M2 plan and acceptance criteria, for the owner to review
 
 ## M2 First PoC
