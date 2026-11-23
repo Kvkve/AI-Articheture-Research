@@ -13,14 +13,14 @@ Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 - [ ] Owner's self-test for M0: explain the branch and pull request flow in their own words, and make one small change alone (tick the two boxes above through a pull request)
 - [x] Check that the limits in `.claude/settings.json` are loaded in a new session (both variables are present)
 - [x] Test that the concurrent limit is enforced: on 2026-11-23, with the owner's approval, four trivial subagents were started at once. Three ran at the same time and the fourth was refused with "Concurrent subagent limit reached"
-- [ ] Test that nesting is off: ask one subagent to start another and expect a refusal. Tried on 2026-11-23: the session's permission classifier denied the test call itself, so the limit was not exercised
+- [x] Test that nesting is off: on 2026-11-23, with the owner's approval, a `general-purpose` subagent was asked to start another. It reported that its tool list has no tool for starting subagents, so it could not even try. The outcome is "tool absent", not "call refused". The test does not show whether the setting or the tool's default removes it
 
 ## M1 Technical research
 
 Plan (approved by the owner on 2026-11-23): three `researcher` subagents on Sonnet in parallel, then one report written by a subagent on Opus.
 
 - [ ] Researcher 1, GitHub Copilot SDK basics: setup with your own model API key, the Python API, streaming output, current limits and preview status
-- [ ] Researcher 2, GitHub Copilot SDK for several users: session persistence and resume, isolation between users, deployment shapes (one runtime per user or a shared one)
+- [x] Researcher 2, GitHub Copilot SDK for several users: session persistence and resume, isolation between users, deployment shapes (one runtime per user or a shared one). Notes: `docs/research/research_notes/M1 技术调研/copilot_sdk_multi_user.md`
 - [ ] Researcher 3, open-source components to borrow: frontend and backend scaffolding, chat interface components, conventions for streaming between backend and frontend; the license and maintenance state of each
 - [ ] One report in Chinese for the owner, with sources
 - [ ] First concept lesson for the owner, built on the report and starting from the data model: what an API is, what a session is, what streaming is
