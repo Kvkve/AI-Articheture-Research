@@ -46,13 +46,25 @@ The main agent ran this trial in the session's sandbox container. The owner agre
 - "Does BYOK need a GitHub sign-in" moves from "vendor claim" to "held in one run against a local stand-in".
 - "`get_events()` is unverified" is settled: it returns the stored events, with message content.
 - "Where is the runtime downloaded from" is settled: GitHub release packages of `github/copilot-cli`.
-- New: the default system prompt is that of a coding agent. A chat product must replace or adjust it. The SDK has a `system_message` option for this. That option was not tried.
+- New: the default system prompt is that of a coding agent. A chat product must replace it. The SDK's `system_message` option does this (see the second run below).
 - New: `mode="empty"` forces an explicit storage directory and an explicit tool list.
+
+## Second run: replacing the system prompt
+
+Same setup, three sessions, one prompt each. The stand-in provider recorded the system message it received.
+
+| `system_message` option | System message that reached the provider |
+|---|---|
+| not set | 7,123 characters, begins "You are GitHub Copilot, an AI coding agent built by GitHub" |
+| `{"mode": "append", "content": <our text>}` | 7,198 characters: the same built-in prompt with our text added at the end |
+| `{"mode": "replace", "content": <our text>}` | exactly our 75 characters and nothing else. The extra user message about the sandbox was also gone |
+
+So with "replace" the application decides the whole system prompt. The basics note records the vendor's warning that "replace" also removes the SDK's own guardrails, so the application's prompt must carry any rules it needs.
 
 ## Not tested
 
 - A real model provider, and so real latency, token limits and the BYOK bugs listed in the basics note.
-- The `system_message` option, tools, permission requests, compaction, two requests on one session at the same time.
+- Tools, permission requests, compaction, two requests on one session at the same time. The "customize" mode of `system_message`, which changes single sections of the built-in prompt.
 - Whether the runtime contacts the vendor after errors or over a longer time. `error_reporting=enabled` suggests it may.
 - The other connection types (child process, standalone server).
 
