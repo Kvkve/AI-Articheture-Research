@@ -22,7 +22,6 @@ Updated 2026-11-23 (US Eastern Time).
 - The agent layer (choice (a) in section 10 of the report): the owner leans to using the SDK and wanted a trial first. The trials without a key passed. No decision record is written yet.
 - Cloud environment: a personal environment named `AI-Articheture-Research` was created on 2026-11-23 for this project only. Its network allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has no variables and no setup script yet. The session that created it ran on the owner's Default environment.
 - Model key: the owner will use a Claude API key. The owner deleted the first key and will create a new one when it is needed, so that no copy is kept anywhere else. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings. The owner enters it there. It is stored in plain text, every command in a session on that environment can read it, and only a session started afterwards sees it.
-- The owner did not want a pull request yet. All work of this session is on the branch `claude/gallant-brown-mm3dcs` and not on `main`.
 
 ## Next step
 
@@ -39,7 +38,6 @@ There is no project code yet. The trial script is printed at the end of `docs/re
 ## Open items
 
 - Two tasks under "Set the rules" wait for the owner: set the default branch to `main`, and protect `main`. They do not block the first PoC.
-- A new session starts from `main`. Until this branch is merged, a new session does not see this session's work unless it fetches the branch `claude/gallant-brown-mm3dcs`.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
 - Using a Copilot subscription in place of a model key is a documented sign-in method of the SDK. It is not tested, because it needs a subscription. The vendor advises one GitHub token per user, not a shared one.
 - The SDK keeps the conversation content as plain files on disk. Whether these files can be encrypted was not found.
