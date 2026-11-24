@@ -81,7 +81,7 @@ flowchart TB
 
 How to read it:
 
-- An arrow means "calls" or "starts". An arrow into the database says in its label what is done to the file. The dotted arrow points at what does not exist yet.
+- An arrow means "calls" or "starts". An arrow with a label says in the label what it does. The dotted arrow points at what does not exist yet.
 - The box drawn as a cylinder is a place where data lives. The database is one SQLite file on the backend's disk. By default it is the file app.db in a folder named data inside the backend folder. An environment variable, POC_DATABASE_FILE, can name another file. The file is made at run time and is not kept in the repository.
 - The database has two tables: the users, and the conversations with the user who owns each one. Only the users table is filled today. Task 5 fills the conversations table.
 - When the backend starts, it creates the tables if they are missing. A later start leaves the data alone.
