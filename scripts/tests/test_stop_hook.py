@@ -11,7 +11,8 @@ FAILING_CHECK = [
     "-c",
     "print('step failed: ruff'); raise SystemExit(1)",
 ]
-# Writes to standard output, then standard error, then standard output again.
+# The two streams take turns. Joining all of standard output with all of
+# standard error afterwards would put "third" before "second".
 MIXED_STREAMS_PROGRAM = """
 import sys
 print("first on stdout", flush=True)
@@ -108,7 +109,9 @@ def test_check_command_that_cannot_start_blocks_stop(
 def test_message_tells_the_agent_what_to_do(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    main('{"stop_hook_active": false}', FAILING_CHECK)
+    exit_code = main('{"stop_hook_active": false}', FAILING_CHECK)
 
     message = capsys.readouterr().err
+    assert exit_code == 2
+    assert "do not edit tests, check settings or the owner's code" in message
     assert "stop and explain" in message

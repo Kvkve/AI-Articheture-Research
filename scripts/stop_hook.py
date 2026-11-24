@@ -51,6 +51,9 @@ def run_checks(command: list[str]) -> tuple[int, str]:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            # Bytes that are not valid text must not crash the hook:
+            # a crash would let the agent stop with no checks run.
+            errors="replace",
             check=False,
         )
     except OSError as error:
