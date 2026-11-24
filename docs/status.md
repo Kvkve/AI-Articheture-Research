@@ -89,7 +89,6 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
 
 ## Open items
 
-- `AGENTS.md` describes what `scripts/check.sh` checks, under "Check commands". That sentence does not name the new step for `docs/architecture.md`. The sentence is still true, but it is not complete. A change to `AGENTS.md` needs the owner's approval. The main agent asked on 2026-11-24.
 - The Stop hook very likely runs in a cloud session, but this is not shown directly. What was seen on 2026-11-24: the session's own record lists two Stop hooks at the end of each turn. The first took about four seconds, which fits `scripts/check.sh`. The second took a few hundredths of a second and is the session's own reminder to push. The record does not name the commands. A direct proof would be a turn that ends while a check fails.
 - The diagram of `docs/architecture.md` cannot be drawn inside a cloud session so far. One attempt on 2026-11-24, with a browser and the Mermaid library, was denied by the session's permission rules. The main agent checks the Mermaid text by reading it. The owner sees the drawn diagram on GitHub.
 - One task under "Set the rules" waits for the owner: protect `main` on GitHub. When `main` is protected, the check named `checks` can be made required for merging. The default branch is already `main`.
