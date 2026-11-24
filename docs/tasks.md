@@ -37,6 +37,8 @@ First task (approved by the owner on 2026-11-23): set up the automatic checks to
 
 Agent layer (chosen by the owner on 2026-11-23): the first PoC uses the Copilot SDK. The reasons: it is the SDK this project set out to study; three trial runs, the last one against a real model, showed that it works with the project's own model key; people the owner works with also recommend it, and the first PoC is meant as a reference for a later build in that setting. It was not compared with other options. All code that touches the SDK stays in one module, so that the SDK can be replaced. No decision record is written now, because the choice is cheap to change in a first PoC.
 
+Where the runtime runs (chosen by the owner on 2026-11-23): inside the backend's own process. This is the SDK's default and the only way the trial runs tested. A crash of the runtime then stops the backend and every conversation in progress. That is accepted for a first PoC on one machine. The connection type is set in the one module that touches the SDK, so it can be changed to a child process later.
+
 - [ ] At the end of the first PoC, look back at the choice of the Copilot SDK with what was learned. Write decision record 0007 if the choice stays and has become costly to change
 - [ ] At the end of the first PoC, look back at the working rules. Prune `AGENTS.md` and `CLAUDE.md`. Ask whether the owner's reasons for choices and the owner's reading of changes are enough to find gaps in understanding. Ask whether two untested rules work: "a lesson becomes a check or a rule" and "no new documents outside the document map"
 
