@@ -27,6 +27,9 @@ step() {
 step "Document map"
 python3 "$repository_root/scripts/check_document_map.py"
 
+step "Architecture file paths"
+python3 "$repository_root/scripts/check_architecture.py"
+
 # The Python tools run from the repository root and read their settings from
 # backend/pyproject.toml, so backend/ and scripts/ follow one set of rules.
 # "--no-sync" stops uv from installing anything here.

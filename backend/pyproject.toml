@@ -27,7 +27,7 @@ extend-select = ["I", "B", "UP", "ERA001", "FIX", "BLE001", "S"]
 
 [tool.ruff.lint.isort]
 # Ruff runs from the repository root, so it cannot guess which modules are ours.
-known-first-party = ["app", "check_document_map", "stop_hook"]
+known-first-party = ["app", "check_architecture", "check_document_map", "stop_hook"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests use plain assert statements; pytest relies on them.

@@ -4,7 +4,13 @@ This file shows everything that is built today in one diagram, down to the file 
 
 One diagram shows everything. Each box is a component, with the file that holds it. Update the diagram and the table in the same change that adds, removes or moves a component.
 
-Shows the state after task 1 of the first PoC: the skeleton and the automatic checks.
+Rules for this file:
+
+- Every file named in the diagram also appears in the table, with its full path from the repository root.
+- Backticks are used only for paths and for addresses of the API that begin with `/`.
+- An automatic check, `scripts/check_architecture.py`, verifies that each path in backticks exists.
+
+Shows the state after task 1 of the first PoC and the check of this file that came after it: the skeleton and the automatic checks.
 
 ## The whole picture
 
@@ -39,12 +45,13 @@ flowchart TB
         GH["GitHub, on every pull request<br/>.github/workflows/checks.yml"]
         CHECK["scripts/check.sh<br/>the one command that runs every check"]
         MAP["Step 1: the document map<br/>scripts/check_document_map.py<br/>every path in the map of AGENTS.md exists"]
-        PY["Step 2: Python code in backend/ and scripts/<br/>ruff, mypy, pytest<br/>rules: backend/pyproject.toml<br/>tests: backend/tests/ and scripts/tests/"]
-        TS["Step 3: code in frontend/<br/>ESLint, TypeScript compiler, Vitest<br/>rules: frontend/eslint.config.js<br/>tests: frontend/src/App.test.tsx"]
+        ARCH["Step 2: this file<br/>scripts/check_architecture.py<br/>every path in backticks in docs/architecture.md exists"]
+        PY["Step 3: Python code in backend/ and scripts/<br/>ruff, mypy, pytest<br/>rules: backend/pyproject.toml<br/>tests: backend/tests/ and scripts/tests/"]
+        TS["Step 4: code in frontend/<br/>ESLint, TypeScript compiler, Vitest<br/>rules: frontend/eslint.config.js<br/>tests: frontend/src/App.test.tsx"]
         P --> CHECK
         HOOK --> CHECK
         GH --> CHECK
-        CHECK --> MAP --> PY --> TS
+        CHECK --> MAP --> ARCH --> PY --> TS
     end
 
     subgraph DEP["Installing dependencies"]
@@ -60,20 +67,21 @@ How to read it:
 
 - An arrow means "calls" or "starts". The dotted arrow points at what does not exist yet.
 - The web interface and the backend API are the product. They do not talk to each other yet. Task 7 connects them.
-- The checks are not part of the product. They look at its code: step 2 at `backend/`, step 3 at `frontend/`.
+- The checks are not part of the product. They look at its code: step 3 at `backend/`, step 4 at `frontend/`.
 - A request to the backend goes from the browser to uvicorn, then to the application, then to the function for that address. The answer goes back the same way. In the tests there is no uvicorn: the test calls the application directly.
 - Three callers run the same check command. So a pass on one machine means the same as a pass on GitHub. The steps run in order, and the command stops at the first step that fails.
-- In steps 2 and 3, the first tool looks for careless code, the second checks the types, and the third runs the tests.
+- In steps 3 and 4, the first tool looks for careless code, the second checks the types, and the third runs the tests.
 
 ## Where the code is
 
 | Component | Code | What it does |
 |---|---|---|
-| Web interface | `frontend/src/` | The page the user sees. Today it shows one heading. |
+| Web interface | `frontend/index.html`, `frontend/src/main.tsx`, `frontend/src/App.tsx` | The page the user sees. `frontend/index.html` is the empty page the browser loads. `frontend/src/main.tsx` starts React on that page. `frontend/src/App.tsx` is the page content. Today it shows one heading. |
 | Backend API | `backend/app/main.py` | Receives requests and answers them. Today it has one endpoint, `/health`. |
 | Tests | `backend/tests/`, `frontend/src/App.test.tsx`, `scripts/tests/` | Call the code and compare the result with what is expected. |
 | The check command | `scripts/check.sh` | Runs every check in order and stops at the first failure. |
 | Document map check | `scripts/check_document_map.py` | Fails when a path in the document map of `AGENTS.md` is missing. |
+| Architecture file check | `scripts/check_architecture.py` | Fails when a path in backticks in `docs/architecture.md` is missing. |
 | Stop hook | `scripts/stop_hook.py` | Runs the check command when the main agent ends a turn. `.claude/settings.json` tells Claude Code to call it. |
 | Checks on GitHub | `.github/workflows/checks.yml` | Runs the check command on every pull request. |
 | Installing dependencies | `scripts/setup.sh` | Installs the exact versions listed in `backend/uv.lock` and `frontend/package-lock.json`. |
