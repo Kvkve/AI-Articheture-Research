@@ -43,6 +43,8 @@ Where the conversation history lives (chosen by the owner on 2026-11-23): only i
 
 How answers travel from the backend to the browser (chosen by the owner on 2026-11-23): Server-Sent Events. One direction is enough for question-and-answer chat. FastAPI has it built in. The ready-made chat formats that the research found are built on it, so the choice fits a hand-written frontend and a component library alike. What each message holds is chosen together with the frontend. This project has not run any of the transport options yet.
 
+The frontend (chosen by the owner on 2026-11-23): hand-written React components. One small library, `react-markdown`, shows the formatting of answers. The message format over Server-Sent Events is the project's own and stays small. The reasons: every step of the path stays in the project's own code, and there is no second fast-changing dependency next to the SDK. The cost: a plain interface, and the project writes the stop button, the scrolling and the error display itself. The owner hopes that each team can later have its own frontend. So the backend API and the message format are a contract: they are written down, and they hold nothing that only this one frontend needs. In the frontend, the code that talks to the backend stays in one module, apart from the components that draw the page.
+
 - [ ] At the end of the first PoC, look back at the choice of the Copilot SDK with what was learned. Write decision record 0007 if the choice stays and has become costly to change
 - [ ] At the end of the first PoC, look back at the working rules. Prune `AGENTS.md` and `CLAUDE.md`. Ask whether the owner's reasons for choices and the owner's reading of changes are enough to find gaps in understanding. Ask whether two untested rules work: "a lesson becomes a check or a rule" and "no new documents outside the document map"
 
@@ -51,3 +53,5 @@ How answers travel from the backend to the browser (chosen by the owner on 2026-
 Response cache, knowledge sources, connections to databases and other APIs, deployment. Not scheduled yet.
 
 Before a build for hundreds of users, look again at two choices of the first PoC (the owner asked about this on 2026-11-23). Where the runtime runs: inside the backend's process, a crash stops every conversation. Where the conversation history lives: with several backend machines, session files on one machine's disk cannot be read by the others. The choices of the Copilot SDK and of Server-Sent Events are expected to carry over.
+
+Each team may later have its own frontend (the owner's hope, 2026-11-23). Two ways to get there, not chosen yet: one shared frontend with settings for each team, or separate frontends that each team builds on the shared backend API, perhaps with shared components.
