@@ -39,7 +39,7 @@ The parts, from left to right:
 - **Web interface.** What the user sees: a sign-in step, a list of conversations, a chat window.
 - **Backend API.** Receives requests from the web interface, checks who the user is, and passes messages to the agent.
 - **Session management.** Maps each user's conversation to an agent session, so a conversation can be resumed and users cannot see each other's data.
-- **Agent SDK and runtime.** The planned choice is the GitHub Copilot SDK, which drives the Copilot CLI as its runtime. This is to be confirmed by the technical research.
+- **Agent SDK and runtime.** The first PoC uses the Copilot SDK. Its vendor is renaming it from GitHub Copilot SDK to Microsoft Copilot SDK. Since version 2 the runtime is a separate binary from the same vendor. The SDK downloads it and by default loads it inside the backend process, so the Copilot CLI program is no longer needed. The technical research and three trial runs, the last one against a real model, confirmed that the SDK works with the project's own model key. It was not compared with other options.
 - **Tools and integrations.** Functions the agent can call to query databases and other APIs.
 - **Response cache and knowledge.** Reuse of earlier answers, and a loop that turns reviewed feedback into knowledge updates.
 
