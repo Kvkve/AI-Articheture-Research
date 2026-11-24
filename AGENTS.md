@@ -32,7 +32,10 @@ Design decisions, milestone plans, changes to this file and to `CLAUDE.md`, and 
 
 - `main` holds approved work. Do not push to `main` directly.
 - Do each piece of work on its own branch. When it is ready, open a pull request to `main`.
-- Only the owner merges a pull request.
+- A pull request is merged only when the owner agrees. The owner merges it, or tells the main agent in the conversation to merge it.
+- One agreement covers one pull request.
+- Before asking the owner to agree, the main agent says in Chinese what the pull request changes.
+- The main agent does not merge while an automatic check fails.
 
 ## Language
 
