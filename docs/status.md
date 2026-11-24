@@ -6,7 +6,7 @@ Updated 2026-11-23 (US Eastern Time).
 
 - The project has three stages so far: setting the rules (done), the technical research (done), and the first PoC (in progress). Use these plain names with the owner. The owner did not agree to short labels for stages and does not want them.
 - The first PoC has ten tasks. They are in `docs/tasks.md` under "First PoC", with every design choice and its reason.
-- Task 1, the skeleton and the automatic checks, is built (pull request #9). One step waits for the owner: approving the setup script in the settings of the cloud environment. See "Open items".
+- Task 1, the skeleton and the automatic checks, is done (pull request #9).
 - What task 1 added:
   - `backend/`: an empty FastAPI application with one endpoint, `/health`. Its dependencies are managed with `uv` and locked in `backend/uv.lock`.
   - `frontend/`: a React and TypeScript application made with `create-vite`, with the demo page removed. Its dependencies are locked in `frontend/package-lock.json`.
@@ -40,7 +40,7 @@ Updated 2026-11-23 (US Eastern Time).
   - Under BYOK the SDK reports a cost of 0. The application must work out cost from the token counts.
   - The SDK changes fast. Versions must be pinned.
 - Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. Only task 8 uses it. The automatic checks need no key.
-- Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable.
+- Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable and a setup script. The script calls `scripts/setup.sh` when a new machine is built for a session. The owner approved it on 2026-11-23.
 
 ## How the work with the owner goes
 
@@ -78,8 +78,7 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
 
 ## Open items
 
-- The setup script of the cloud environment waits for the owner's approval. It is a few lines that call `scripts/setup.sh`. Merge pull request #9 before starting the next session: the first new session after the script is saved builds a stored copy of the machine, and that copy holds the dependencies only if `scripts/setup.sh` is on `main` by then.
-- Not verified: whether a new session starts with the dependencies already installed. If it does not, the Stop hook and `check.sh` say so, and `./scripts/setup.sh` installs them in a few seconds.
+- The setup script of the cloud environment is saved but not proven. It first runs when a new session starts. Check in the next session whether the dependencies are already installed: `./scripts/check.sh` says so. If they are not, `./scripts/setup.sh` installs them in a few seconds. One known cause: the first new session after the script was saved builds a stored copy of the machine, and that copy holds the dependencies only if `scripts/setup.sh` was on `main` by then. The copy is rebuilt after about seven days, or when the script changes.
 - The Stop hook has been run by hand and by tests. Whether Claude Code runs it at the end of a turn in a cloud session will show in the next session.
 - The marks "(created at first use)" in the document map of `AGENTS.md` still stand for `docs/sources.md`, which now exists. Removing the mark is an edit of `AGENTS.md` and needs the owner's approval. The check passes either way.
 - One task under "Set the rules" waits for the owner: protect `main` on GitHub. When `main` is protected, the check named `checks` can be made required for merging. The default branch is already `main`.
