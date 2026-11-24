@@ -134,6 +134,7 @@ So with the default settings a request may be processed outside the United State
    - the working directory of the process.
    - The key was in none of the files.
    - `get_events()` returned 6 events after the first turn, among them the user message and the assistant message.
+   - A later check on a copy of the stored files, with no message sent: after a resume, `get_events()` returned the first assistant message with its reasoning summary in the field `reasoning_text`, 176 characters. The second assistant message, which had no reasoning, came with that field empty. So an interface can read the reasoning of old messages through the SDK.
 7. Outside connections during the real run, about five seconds:
    - one TCP connection to `160.79.104.10` port 443. A lookup of `api.anthropic.com` made less than a minute before the run returned this address. The lookup inside the run was not recorded. There was only one such connection, so both requests presumably used it;
    - one DNS socket to `8.8.8.8` port 53, a public DNS server. The names asked for were not recorded;
