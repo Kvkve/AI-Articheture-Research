@@ -6,7 +6,7 @@ Updated 2026-11-23 (US Eastern Time).
 
 - The project has three stages so far: setting the rules (done), the technical research (done), and the first PoC (planned, not started). Use these plain names with the owner. The owner did not agree to short labels for stages and does not want them.
 - Technical research: finished and checked. Three research notes and one trial note are in `docs/research/research_notes/第一版 PoC 技术调研/`. The report is `docs/research/reports/第一版 PoC 技术调研.md`. Section 12 of the report holds the trial results.
-- The first PoC: every design choice is made, and a plan with acceptance criteria is written. Both are in `docs/tasks.md` under "First PoC". The plan was proposed on 2026-11-23 and waits for the owner's approval.
+- The first PoC: every design choice is made, and a plan with acceptance criteria is written. Both are in `docs/tasks.md` under "First PoC". The owner approved the plan on 2026-11-23.
 - The choices in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
   - The runtime runs inside the backend's own process.
@@ -55,9 +55,8 @@ These points come from 2026-11-23. The rules themselves are in `AGENTS.md` and `
 
 ## Next step
 
-1. If the plan is not yet approved, ask the owner to approve it. Explain it in Chinese first.
-2. Start task 1 of the plan: the skeleton and the automatic checks. Start a new session for it, on the project environment `AI-Articheture-Research`.
-3. Then the tasks of the plan in order, one at a time.
+1. Start task 1 of the plan: the skeleton and the automatic checks. Start a new session for it, on the project environment `AI-Articheture-Research`.
+2. Then the tasks of the plan in order, one at a time.
 
 How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent. The menu at the title of a running session only edits that session's own environment. Source: [Configure cloud environments](https://code.claude.com/docs/en/cloud-environments), read 2026-11-23. The owner has found the selector. A session uses the environment chosen when it starts, and only a session started after a variable was set can read it.
 

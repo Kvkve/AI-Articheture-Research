@@ -61,7 +61,7 @@ Where requests are processed (the owner agreed on 2026-11-23): the first PoC lea
 
 ### Plan
 
-The main agent proposed this plan on 2026-11-23. It waits for the owner's approval.
+The main agent proposed this plan on 2026-11-23. The owner approved it on the same day.
 
 How the tasks are done:
 
