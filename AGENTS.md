@@ -48,9 +48,10 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 | Starting a session | `docs/status.md` | Where the work stands, the next step, how to run and verify |
 | Choosing what to do next | `docs/tasks.md` | Milestones and the task list |
 | You need the purpose, target architecture or scope | `README.md` | Project background |
+| You need to know what is built now and where its code is | `docs/architecture.md` | One diagram of every component that is built and how they connect; a table of where the code of each component is |
 | Making or changing a design choice | `docs/decisions/README.md` | Index of decisions; each decision is a file in the same folder |
 | You need evidence or want to cite something | `docs/research/reports/` | Research reports; raw notes are in `docs/research/research_notes/` |
-| Borrowing outside code | `docs/sources.md` | Third-party sources and licenses (created at first use) |
+| Borrowing outside code | `docs/sources.md` | Third-party sources and licenses |
 | Explaining to the owner or reviewing a lesson | `docs/learning/` | The owner's learning notes (created at first use) |
 
 ## Keeping documents in order
@@ -74,7 +75,13 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 - No hard-coded configuration values (addresses, keys, model names, limits). Read them from configuration.
 - No placeholder implementations and no TODOs. If something cannot be finished, record it in `docs/tasks.md` and say so.
 
-Check commands and language-specific rules will be added here with the first code.
+Check commands:
+
+- `./scripts/setup.sh` installs the dependencies of the backend and the frontend from their lock files.
+- `./scripts/check.sh` runs every check and stops at the first failure. It checks the document map, then the Python code in `backend/` and `scripts/` (ruff, mypy, pytest), then the code in `frontend/` (ESLint, the TypeScript compiler, Vitest).
+- The same command runs on every pull request, and before the main agent ends a turn in Claude Code.
+
+The rules for each language are in the tool settings: `backend/pyproject.toml` for Python, and `frontend/eslint.config.js` with the `tsconfig` files for TypeScript.
 
 ## Definition of done
 

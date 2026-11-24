@@ -9,6 +9,7 @@
 - A subagent's "done" is a claim. The main agent reads the diff and runs the checks itself before accepting.
 - At most two review rounds. If a disagreement remains, the owner decides.
 - Agents do not edit code the owner wrote by hand. They give comments only.
+- `docs/architecture.md` shows what is built now. When a task adds, removes or moves a part of the system, the brief asks `implementer` to update that file in the same change. `reviewer` checks that it matches the code. The main agent reads it when it verifies the result.
 
 ## Using subagents
 

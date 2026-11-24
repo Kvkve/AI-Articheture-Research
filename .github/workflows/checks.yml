@@ -1,0 +1,27 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv has no moving major tag after v7, so the exact release is named.
+      - uses: astral-sh/setup-uv@v10.4.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+
+      - run: ./scripts/setup.sh
+
+      # The same one command that people and the stop hook run.
+      - run: ./scripts/check.sh

@@ -15,6 +15,7 @@ Check each of these:
 - Do comments only repeat what the code does?
 - Does the change go beyond the task's scope?
 - Does it break an accepted decision record?
+- Does `docs/architecture.md` still match the code after this change? Name each part that was added, removed or moved and is not shown there.
 
 Do not change any file. You may run the check commands to verify.
 

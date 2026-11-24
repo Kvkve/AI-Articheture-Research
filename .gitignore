@@ -1,0 +1,20 @@
+# Installed dependencies
+.venv/
+node_modules/
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# Tool caches
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.tsbuildinfo
+.vite/
+
+# Editor and system files
+.DS_Store
