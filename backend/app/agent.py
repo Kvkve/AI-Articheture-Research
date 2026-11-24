@@ -9,6 +9,7 @@
 # and disconnects, so no session stays open in memory between messages.
 import asyncio
 import contextlib
+import logging
 import re
 import secrets
 import time
@@ -63,8 +64,13 @@ ProviderType = Literal["openai", "azure", "anthropic", "google", "winml"]
 PROVIDER_LABEL = "provider"
 
 # The error types that a request of SDK 2.0.1 can raise. They are turned
-# into errors of this module, so that no type of the SDK leaves it.
-SDK_ERRORS = (JsonRpcError, ProcessExitedError)
+# into errors of this module, so that no type of the SDK leaves it. The SDK
+# also raises a plain RuntimeError, for example "Client disconnected during
+# session initialization" while its client stops. The conversion is used
+# around calls on the SDK only, so it cannot hide a fault of this module.
+SDK_ERRORS = (JsonRpcError, ProcessExitedError, RuntimeError)
+
+logger = logging.getLogger(__name__)
 
 # The form of the ids this module makes: 32 small hexadecimal characters.
 # The id becomes the name of a folder on disk, so an id of any other form is
@@ -199,8 +205,8 @@ class Agent:
 
     async def start_conversation(self) -> str:
         """Makes a new conversation and returns its id."""
-        client = self._started_client()
         conversation_id = secrets.token_hex(16)
+        client = self._started_client()
         with self._sdk_errors():
             # A name makes the session persist from the start. Without one,
             # the runtime can resume a session only after its first message,
@@ -216,7 +222,7 @@ class Agent:
                 github=self._github(),
                 events=self._events(),
             )
-            await self._disconnect(session)
+        await self._disconnect(session)
         return conversation_id
 
     async def begin_answer(self, conversation_id: str, text: str) -> "Answer":
@@ -228,13 +234,14 @@ class Agent:
         the Answer to its end or close it with aclose().
         """
         check_conversation_id(conversation_id)
-        client = self._started_client()
+        self._started_client()
         if self._settings.model_api_key is None:
             raise NoModelKeyError(
                 "No model key is set. Set POC_MODEL_API_KEY and restart the backend."
             )
         in_use = self._take(conversation_id, started=False)
         try:
+            client = self._started_client()
             with self._sdk_errors():
                 metadata = await client.get_session_metadata(conversation_id)
         except BaseException:
@@ -252,9 +259,12 @@ class Agent:
         wait setting.
         """
         check_conversation_id(conversation_id)
-        client = self._started_client()
+        self._started_client()
         in_use = await self._take_when_free(conversation_id)
         try:
+            # The client is taken after the wait: the agent may have been
+            # stopped meanwhile.
+            client = self._started_client()
             session = await self._resume(client, conversation_id)
             try:
                 with self._sdk_errors():
@@ -271,12 +281,16 @@ class Agent:
         if self._in_use.get(conversation_id) is not in_use:
             # Step two came so late that the conversation was given free.
             raise AnswerTimedOutError("The answer was not read in time.")
+        try:
+            client = self._started_client()
+        except AgentError:
+            self._free(conversation_id, in_use)
+            raise
         in_use.started = True
         session: CopilotSession | None = None
         events: asyncio.Queue[SessionEvent | None] = asyncio.Queue()
         sent = False
         finished = False
-        client = self._started_client()
         self._open_answers.add(events)
         try:
             session = await self._resume(client, conversation_id)
@@ -287,8 +301,8 @@ class Agent:
                 # is handed to the event loop instead of put in the queue here.
                 loop.call_soon_threadsafe(events.put_nowait, event)
 
-            session.on(receive)
             with self._sdk_errors():
+                session.on(receive)
                 await session.send(text)
             sent = True
             while True:
@@ -317,8 +331,15 @@ class Agent:
                 )
             )
             self._clean_ups.add(clean_up)
-            clean_up.add_done_callback(self._clean_ups.discard)
+            clean_up.add_done_callback(self._clean_up_done)
             await asyncio.shield(clean_up)
+
+    def _clean_up_done(self, clean_up: asyncio.Task[None]) -> None:
+        self._clean_ups.discard(clean_up)
+        # When the reader was cancelled, nobody else reads the error of the
+        # clean-up. Its text has the key removed already.
+        if not clean_up.cancelled() and (error := clean_up.exception()) is not None:
+            logger.warning("The clean-up of an answer failed: %s", error)
 
     async def _clean_up(
         self,
@@ -392,9 +413,13 @@ class Agent:
     async def _resume(
         self, client: CopilotClient, conversation_id: str
     ) -> CopilotSession:
+        self._check_still_held(client)
         with self._sdk_errors():
-            if await client.get_session_metadata(conversation_id) is None:
-                raise UnknownConversationError("No conversation has this id.")
+            metadata = await client.get_session_metadata(conversation_id)
+        if metadata is None:
+            raise UnknownConversationError("No conversation has this id.")
+        self._check_still_held(client)
+        with self._sdk_errors():
             # The provider settings and the key are given again on every
             # resume, because the runtime does not store the key on disk.
             return await client.resume_session(
@@ -412,6 +437,13 @@ class Agent:
         if self._client is None:
             raise AgentError("The agent runtime is not started.")
         return self._client
+
+    def _check_still_held(self, client: CopilotClient) -> None:
+        # Called right before a call on the SDK's client, with no wait in
+        # between. A stopped SDK client starts a new runtime by itself when
+        # it is called, and nothing would ever stop that runtime.
+        if self._client is not client:
+            raise AgentError("The agent runtime is not started.")
 
     def _take(self, conversation_id: str, started: bool) -> _ConversationInUse:
         current = self._in_use.get(conversation_id)

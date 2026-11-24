@@ -59,13 +59,18 @@ def stand_in() -> Iterator[ModelStandIn]:
 
 
 @pytest.fixture
-def model_key(monkeypatch: pytest.MonkeyPatch, stand_in: ModelStandIn) -> str:
-    # Points the settings at the stand-in, with a key made at run time.
+def stand_in_address(monkeypatch: pytest.MonkeyPatch, stand_in: ModelStandIn) -> None:
+    # Points the settings at the stand-in, with no key yet.
     for name in PROXY_VARIABLES:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("NO_PROXY", "127.0.0.1")
     monkeypatch.setenv("no_proxy", "127.0.0.1")
     monkeypatch.setenv("POC_MODEL_PROVIDER_ADDRESS", stand_in.address)
+
+
+@pytest.fixture
+def model_key(monkeypatch: pytest.MonkeyPatch, stand_in_address: None) -> str:
+    # Adds a key made at run time to the settings that point at the stand-in.
     key = secrets.token_urlsafe(24)
     monkeypatch.setenv("POC_MODEL_API_KEY", key)
     return key
@@ -101,6 +106,14 @@ def portal_of(client: TestClient) -> BlockingPortal:
     # portal lets a test call the agent's async methods on that loop.
     assert client.portal is not None
     return client.portal
+
+
+async def wait_until_free(agent: Agent, conversation_id: str) -> None:
+    # Reads the agent's private table of busy conversations, because nothing
+    # public waits without also opening a session.
+    in_use = agent._in_use.get(conversation_id)
+    if in_use is not None:
+        await asyncio.wait_for(in_use.freed.wait(), STAND_IN_WAIT_SECONDS)
 
 
 async def read_all(answer: Answer) -> list[str]:
@@ -327,8 +340,12 @@ def test_a_cancel_scope_like_starlettes_stops_the_model(stand_in: ModelStandIn) 
                 group.cancel_scope.cancel()
 
             await wait_for(held.connection_closed_early)
-            # Reading the history waits until the clean-up has freed the
-            # conversation.
+            await wait_until_free(agent, conversation_id)
+            # The clean-up must have disconnected the session. Nothing public
+            # shows an open session, so the test reads private state of the
+            # agent and of the SDK's client. It does not import the SDK.
+            assert agent._client is not None
+            assert len(agent._client._sessions) == 0
             history = await agent.read_history(conversation_id)
             next_answer = await send(agent, conversation_id, "Something else.")
             return read, history, next_answer
@@ -370,6 +387,73 @@ def test_stopping_the_agent_while_an_answer_is_open_gives_no_sdk_error(
             rest = await read_all(to_read)
         # The end comes at once, with no piece the model sent after the stop.
         assert rest == []
+
+    asyncio.run(steps())
+
+
+@pytest.mark.usefixtures("model_key")
+def test_a_history_read_that_waits_while_the_agent_stops_ends_with_an_agent_error(
+    stand_in: ModelStandIn,
+) -> None:
+    # The answer is read on while the agent stops. Its clean-up frees the
+    # conversation during the stop, and the waiting read wakes then.
+    stand_in.answer_and_hold("one ", "two ", hold_after=1)
+
+    async def steps() -> None:
+        agent = Agent(Settings())
+        await agent.start()
+        conversation_id = await agent.start_conversation()
+        answer = await agent.begin_answer(conversation_id, "Question")
+        assert await anext(answer) == "one "
+        reading_answer = asyncio.create_task(read_all(answer))
+        reading_history = asyncio.create_task(agent.read_history(conversation_id))
+        for _ in range(10):
+            await asyncio.sleep(0)
+        assert not reading_history.done()
+
+        await agent.stop()
+
+        with contextlib.suppress(AgentError):
+            await reading_answer
+        # An error of this module, and not a plain RuntimeError of the SDK.
+        with pytest.raises(AgentError):
+            await reading_history
+
+    asyncio.run(steps())
+
+
+@pytest.mark.usefixtures("model_key")
+def test_a_history_read_that_wakes_after_the_stop_starts_no_runtime(
+    stand_in: ModelStandIn,
+) -> None:
+    # The answer stays unread through the stop, and is closed afterwards.
+    # That frees the conversation, and the waiting read wakes after the stop.
+    stand_in.answer_and_hold("one ", "two ", hold_after=1)
+
+    async def steps() -> None:
+        agent = Agent(Settings())
+        await agent.start()
+        # A stopped SDK client starts a new runtime by itself when it is
+        # called. Only private state of the SDK's client shows whether a
+        # runtime runs, so the test keeps a reference to that client.
+        sdk_client = agent._client
+        assert sdk_client is not None
+        conversation_id = await agent.start_conversation()
+        answer = await agent.begin_answer(conversation_id, "Question")
+        assert await anext(answer) == "one "
+        reading_history = asyncio.create_task(agent.read_history(conversation_id))
+        for _ in range(10):
+            await asyncio.sleep(0)
+        assert not reading_history.done()
+
+        await agent.stop()
+        with contextlib.suppress(AgentError):
+            await answer.aclose()
+
+        with pytest.raises(AgentError, match="not started"):
+            await reading_history
+        assert sdk_client._state == "disconnected"
+        assert sdk_client._ffi_host is None
 
     asyncio.run(steps())
 
@@ -519,6 +603,7 @@ def test_a_request_holds_only_its_own_conversation_and_the_settings(
     assert other_request.headers["x-api-key"] == model_key
 
 
+@pytest.mark.usefixtures("stand_in_address")
 def test_with_no_model_key_the_application_starts_and_sending_is_refused(
     stand_in: ModelStandIn,
 ) -> None:
