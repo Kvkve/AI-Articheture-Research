@@ -56,8 +56,8 @@ These points come from the owner. The rules themselves are in `AGENTS.md` and `C
 - No company content. The owner's workplace has internal documents on this topic. They must not be uploaded or copied into the repository.
 - Dates in files are US Eastern Time. The clock of a cloud session shows UTC, which is a day ahead in the evening. Check with `TZ=America/New_York date`.
 - How the owner learns, said on 2026-11-24. The owner studies general ideas elsewhere, in another session or with another tool: HTTP, APIs, tokens, streaming. The building goes on here. After each task the owner asks about it in broad terms: the summary in Chinese and what changed in the diagram of `docs/architecture.md`. The owner does not read code line by line. Configuration files and scripts are black boxes unless the owner asks.
-- The owner watches the usage of the main model. Keep each session to one task. Long explanations belong in a separate session. Do not suggest a new subagent when the main agent or `implementer` can do the work for less.
-- The owner plans to run the trial of task 8 in the browser in person. Whether the owner writes any part by hand is the owner's choice. Do not set exercises.
+- The owner watches the usage of the main model, and asked about it on 2026-11-24. The main agent's reading of this, not the owner's words: keep each session to one task, and put long explanations in a separate session.
+- The owner means to get hands-on when building in the work setting. The main agent suggested that the owner runs the trial of task 8 in the browser in person. The owner has not said yes or no to that. Whether the owner writes any part by hand is the owner's choice. Do not set exercises.
 
 ## Next step
 
