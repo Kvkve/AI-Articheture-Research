@@ -39,6 +39,8 @@ Agent layer (chosen by the owner on 2026-11-23): the first PoC uses the Copilot 
 
 Where the runtime runs (chosen by the owner on 2026-11-23): inside the backend's own process. This is the SDK's default and the only way the trial runs tested. A crash of the runtime then stops the backend and every conversation in progress. That is accepted for a first PoC on one machine. The connection type is set in the one module that touches the SDK, so it can be changed to a child process later.
 
+Where the conversation history lives (chosen by the owner on 2026-11-23): only in the SDK's session files on the backend's disk. The backend reads the history back through the SDK. The application keeps its own table of which user owns which conversation, and checks it before every action on a conversation. The trial runs tested storing, resuming and reading back. The cost: the content cannot be queried with SQL, and the vendor decides the file format. A copy in the application's own database can be added later in the one module that touches the SDK.
+
 - [ ] At the end of the first PoC, look back at the choice of the Copilot SDK with what was learned. Write decision record 0007 if the choice stays and has become costly to change
 - [ ] At the end of the first PoC, look back at the working rules. Prune `AGENTS.md` and `CLAUDE.md`. Ask whether the owner's reasons for choices and the owner's reading of changes are enough to find gaps in understanding. Ask whether two untested rules work: "a lesson becomes a check or a rule" and "no new documents outside the document map"
 
