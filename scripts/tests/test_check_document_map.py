@@ -81,3 +81,15 @@ def test_path_ending_in_slash_that_is_a_file_fails_even_with_marker(
     text = make_agents_text("| Learning | `learning/` | Notes (created at first use) |")
 
     assert find_problems(text, tmp_path) != []
+
+
+def test_marker_only_allows_the_path_in_its_own_row(tmp_path: Path) -> None:
+    text = make_agents_text(
+        "| Starting | `docs/status.md` | Status |",
+        "| Borrowing | `docs/sources.md` | Sources (created at first use) |",
+    )
+
+    problems = find_problems(text, tmp_path)
+
+    assert len(problems) == 1
+    assert "docs/status.md" in problems[0]

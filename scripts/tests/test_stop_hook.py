@@ -11,6 +11,17 @@ FAILING_CHECK = [
     "-c",
     "print('step failed: ruff'); raise SystemExit(1)",
 ]
+# Writes to standard output, then standard error, then standard output again.
+MIXED_STREAMS_PROGRAM = """
+import sys
+print("first on stdout", flush=True)
+print("second on stderr", file=sys.stderr, flush=True)
+print("third on stdout", flush=True)
+print("step failed: mypy", file=sys.stderr)
+raise SystemExit(1)
+"""
+MIXED_STREAMS_FAILING_CHECK = [sys.executable, "-c", MIXED_STREAMS_PROGRAM]
+MISSING_CHECK = ["/no/such/folder/check.sh"]
 LONG_FAILING_CHECK = [
     sys.executable,
     "-c",
@@ -67,3 +78,37 @@ def test_long_output_is_cut_to_its_end(capsys: pytest.CaptureFixture[str]) -> No
     assert exit_code == 2
     assert len(captured.err) <= MAX_MESSAGE_CHARACTERS
     assert captured.err.rstrip().endswith("step failed: pytest")
+
+
+def test_output_keeps_the_order_it_was_written_in(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main('{"stop_hook_active": false}', MIXED_STREAMS_FAILING_CHECK)
+
+    message = capsys.readouterr().err
+    assert exit_code == 2
+    first = message.index("first on stdout")
+    second = message.index("second on stderr")
+    third = message.index("third on stdout")
+    assert first < second < third
+    assert message.rstrip().endswith("step failed: mypy")
+
+
+def test_check_command_that_cannot_start_blocks_stop(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main('{"stop_hook_active": false}', MISSING_CHECK)
+
+    message = capsys.readouterr().err
+    assert exit_code == 2
+    assert "could not be started" in message
+    assert "/no/such/folder/check.sh" in message
+
+
+def test_message_tells_the_agent_what_to_do(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    main('{"stop_hook_active": false}', FAILING_CHECK)
+
+    message = capsys.readouterr().err
+    assert "stop and explain" in message

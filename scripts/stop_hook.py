@@ -38,21 +38,38 @@ def read_stop_hook_active(input_text: str) -> bool:
 
 
 def run_checks(command: list[str]) -> tuple[int, str]:
-    """Run the check command and return its exit code and combined output."""
-    # The command is fixed in this file or given by a test, never taken from input.
-    result = subprocess.run(  # noqa: S603
-        command,
-        cwd=REPOSITORY_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.returncode, result.stdout + result.stderr
+    """Run the check command and return its exit code and output.
+
+    Standard error goes into the same stream as standard output, so the text
+    stays in the order it was written and the failed step stays last.
+    """
+    try:
+        # The command is fixed in this file or given by a test, never taken from input.
+        result = subprocess.run(  # noqa: S603
+            command,
+            cwd=REPOSITORY_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+    except OSError as error:
+        # If the checks cannot even start, the gate must stay closed.
+        # Letting the agent stop here would mean stopping with no checks run.
+        return 1, f"The check command could not be started: {error}\n"
+    return result.returncode, result.stdout
 
 
 def build_message(check_output: str) -> str:
     """Return a heading plus the end of the check output, within the size limit."""
-    heading = "scripts/check.sh failed. The end of its output:\n"
+    # The hook runs at the end of every turn, and a failure may be expected.
+    # So the heading tells the agent what to do, not only what happened.
+    heading = (
+        "scripts/check.sh failed. Fix the cause if it is yours to fix. "
+        "If the checks cannot pass honestly, or the failure is expected, "
+        "do not edit tests, check settings or the owner's code to get a pass: "
+        "stop and explain. The end of the output:\n"
+    )
     room_for_output = MAX_MESSAGE_CHARACTERS - len(heading)
     return heading + check_output[-room_for_output:]
 

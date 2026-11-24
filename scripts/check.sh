@@ -41,7 +41,7 @@ step "Python: ruff format check (backend and scripts)"
 "${python_tool[@]}" ruff format --check --config "$python_config" backend scripts
 
 step "Python: mypy (backend and scripts)"
-"${python_tool[@]}" mypy --config-file "$python_config" backend/app backend/tests scripts
+"${python_tool[@]}" mypy --config-file "$python_config" backend scripts
 
 step "Python: pytest (backend and scripts)"
 (cd "$backend" && uv run --no-sync pytest)
