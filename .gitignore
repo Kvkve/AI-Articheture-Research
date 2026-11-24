@@ -2,6 +2,9 @@
 .venv/
 node_modules/
 
+# The default folder of the backend's SQLite database, made at run time
+backend/data/
+
 # Build output
 dist/
 build/

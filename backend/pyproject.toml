@@ -5,6 +5,8 @@ description = "Backend of the AI agent platform proof of concept."
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.165.0",
+    "pwdlib[argon2]>=0.4.2",
+    "pydantic-settings>=2.16.3",
     "uvicorn>=0.54.0",
 ]
 
