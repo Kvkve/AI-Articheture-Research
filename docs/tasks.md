@@ -41,9 +41,13 @@ Where the runtime runs (chosen by the owner on 2026-11-23): inside the backend's
 
 Where the conversation history lives (chosen by the owner on 2026-11-23): only in the SDK's session files on the backend's disk. The backend reads the history back through the SDK. The application keeps its own table of which user owns which conversation, and checks it before every action on a conversation. The trial runs tested storing, resuming and reading back. The cost: the content cannot be queried with SQL, and the vendor decides the file format. A copy in the application's own database can be added later in the one module that touches the SDK.
 
+How answers travel from the backend to the browser (chosen by the owner on 2026-11-23): Server-Sent Events. One direction is enough for question-and-answer chat. FastAPI has it built in. The ready-made chat formats that the research found are built on it, so the choice fits a hand-written frontend and a component library alike. What each message holds is chosen together with the frontend. This project has not run any of the transport options yet.
+
 - [ ] At the end of the first PoC, look back at the choice of the Copilot SDK with what was learned. Write decision record 0007 if the choice stays and has become costly to change
 - [ ] At the end of the first PoC, look back at the working rules. Prune `AGENTS.md` and `CLAUDE.md`. Ask whether the owner's reasons for choices and the owner's reading of changes are enough to find gaps in understanding. Ask whether two untested rules work: "a lesson becomes a check or a rule" and "no new documents outside the document map"
 
 ## Later
 
 Response cache, knowledge sources, connections to databases and other APIs, deployment. Not scheduled yet.
+
+Before a build for hundreds of users, look again at two choices of the first PoC (the owner asked about this on 2026-11-23). Where the runtime runs: inside the backend's process, a crash stops every conversation. Where the conversation history lives: with several backend machines, session files on one machine's disk cannot be read by the others. The choices of the Copilot SDK and of Server-Sent Events are expected to carry over.
