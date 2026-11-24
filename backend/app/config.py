@@ -18,6 +18,15 @@ SHORTEST_TOKEN_SECRET_KEY = 32
 LONGEST_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365
 
 
+DEFAULT_SYSTEM_PROMPT = (
+    "You are a helpful assistant in a chat application. "
+    "Answer in the language the user writes in. "
+    "Use Markdown when it makes the answer easier to read. "
+    "You have no tools: you cannot browse the web, read files or run code. "
+    "If you do not know something, say so."
+)
+
+
 def make_random_token_secret_key() -> SecretStr:
     return SecretStr(secrets.token_urlsafe(32))
 
@@ -39,6 +48,30 @@ class Settings(BaseSettings):
     token_expire_minutes: int = Field(
         default=60 * 24 * 8, gt=0, le=LONGEST_TOKEN_EXPIRE_MINUTES
     )
+
+    # The key of the model provider, from POC_MODEL_API_KEY. With no key the
+    # backend still starts, and sending a message is refused with a clear
+    # error. SecretStr keeps the key out of printed settings.
+    model_api_key: SecretStr | None = None
+
+    # The model name sent to the provider, the provider type that the SDK is
+    # given, and the provider's address.
+    model_name: str = "claude-haiku-5-5"
+    model_provider_type: str = "anthropic"
+    model_provider_address: str = "https://api.anthropic.com"
+
+    # The folder that holds the SDK's session files: the conversation
+    # history, as plain text.
+    session_directory: Path = BACKEND_FOLDER / "data" / "sessions"
+
+    # The system prompt of every conversation. It replaces the runtime's own
+    # prompt, which is written for a coding agent.
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+
+    # The longest time, in seconds, to wait for the next event of an answer.
+    # When it runs out, the answer ends with an error and the conversation
+    # is freed, so a provider that stops answering cannot block it for ever.
+    answer_wait_seconds: float = Field(default=120, gt=0)
 
     @field_validator("token_secret_key")
     @classmethod

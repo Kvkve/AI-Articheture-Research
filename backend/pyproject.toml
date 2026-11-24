@@ -5,6 +5,7 @@ description = "Backend of the AI agent platform proof of concept."
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.165.0",
+    "microsoft-copilot-sdk==2.0.1",
     "pwdlib[argon2]>=0.4.2",
     "pydantic-settings>=2.16.3",
     "pyjwt>=2.15.1",
@@ -27,7 +28,13 @@ dev = [
 # The defaults are E4, E7, E9 and F. "extend-select" keeps them and adds more.
 # ERA001, FIX and BLE001 turn rules in AGENTS.md into checks:
 # no commented-out code, no TODO markers, no catching of every exception.
-extend-select = ["I", "B", "UP", "ERA001", "FIX", "BLE001", "S"]
+# TID251 bans the imports listed below.
+extend-select = ["I", "B", "UP", "ERA001", "FIX", "BLE001", "S", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# All code that touches the Copilot SDK stays in one module, so that the SDK
+# can be replaced. The ban also covers its submodules, such as copilot.session.
+"copilot".msg = "Only backend/app/agent.py may import the Copilot SDK."
 
 [tool.ruff.lint.isort]
 # Ruff runs from the repository root, so it cannot guess which modules are ours.
@@ -36,6 +43,8 @@ known-first-party = ["app", "check_architecture", "check_document_map", "stop_ho
 [tool.ruff.lint.per-file-ignores]
 # Tests use plain assert statements; pytest relies on them.
 "**/tests/*.py" = ["S101"]
+# The one module that may import the Copilot SDK.
+"**/app/agent.py" = ["TID251"]
 
 [tool.mypy]
 strict = true

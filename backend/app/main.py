@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import login, protected
+from app.agent import Agent
 from app.config import get_settings
 from app.database import connect, create_tables
 
@@ -18,7 +19,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         create_tables(connection)
     finally:
         connection.close()
-    yield
+    # One agent object serves the whole process. Starting it starts the SDK's
+    # runtime inside this process. Endpoints reach it through get_agent in
+    # backend/app/dependencies.py.
+    agent = Agent(settings)
+    await agent.start()
+    app.state.agent = agent
+    try:
+        yield
+    finally:
+        await agent.stop()
 
 
 app = FastAPI(title="AI Agent Platform", lifespan=lifespan)
