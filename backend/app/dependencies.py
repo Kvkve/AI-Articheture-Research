@@ -1,16 +1,18 @@
 # What an endpoint can ask for: the settings, a database connection for this
-# one request, and the signed-in user. FastAPI calls these functions for each
-# request and passes their results to the endpoint.
+# one request, the signed-in user, and the agent that talks to the model.
+# FastAPI calls these functions for each request and passes their results to
+# the endpoint.
 # get_current_user follows backend/app/api/deps.py in the official FastAPI
 # full-stack template (MIT license). See docs/sources.md.
 import sqlite3
 from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
+from app.agent import Agent
 from app.config import Settings, get_settings
 from app.database import connect
 from app.security import read_access_token
@@ -66,3 +68,13 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_agent(request: Request) -> Agent:
+    # The start-up step in backend/app/main.py makes the one agent of the
+    # process and keeps it on the application.
+    agent: Agent = request.app.state.agent
+    return agent
+
+
+AgentDependency = Annotated[Agent, Depends(get_agent)]

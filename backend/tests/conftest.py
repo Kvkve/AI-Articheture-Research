@@ -23,14 +23,32 @@ def database_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture(autouse=True)
+def session_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    # Every test gets its own folder for the SDK's session files, as it gets
+    # its own database file, so no test can write to the default folder.
+    path = tmp_path / "data" / "sessions"
+    monkeypatch.setenv("POC_SESSION_DIRECTORY", str(path))
+    return path
+
+
+@pytest.fixture(autouse=True)
 def fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     # The application keeps one settings object per process. Clearing it
     # before and after each test gives each test its own settings, read from
-    # the environment variables that the test sets. The token variables of
-    # the machine that runs the tests are removed, so they cannot change a
-    # result.
-    monkeypatch.delenv("POC_TOKEN_SECRET_KEY", raising=False)
-    monkeypatch.delenv("POC_TOKEN_EXPIRE_MINUTES", raising=False)
+    # the environment variables that the test sets. The token and model
+    # variables of the machine that runs the tests are removed, so they
+    # cannot change a result, and no test can use a real model key.
+    for name in (
+        "POC_TOKEN_SECRET_KEY",
+        "POC_TOKEN_EXPIRE_MINUTES",
+        "POC_MODEL_API_KEY",
+        "POC_MODEL_NAME",
+        "POC_MODEL_PROVIDER_TYPE",
+        "POC_MODEL_PROVIDER_ADDRESS",
+        "POC_SYSTEM_PROMPT",
+        "POC_ANSWER_WAIT_SECONDS",
+    ):
+        monkeypatch.delenv(name, raising=False)
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

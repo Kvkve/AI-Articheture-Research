@@ -15,6 +15,13 @@ done
 echo "== Backend: uv sync --locked"
 (cd "$repository_root/backend" && uv sync --locked)
 
+# The Copilot SDK runs a runtime that is not part of its Python package. It
+# is downloaded here, ahead of use, into the SDK's cache folder outside the
+# repository. The version is the one the pinned SDK names. A second run finds
+# it in the cache and downloads nothing new.
+echo "== Backend: download the runtime of the Copilot SDK"
+(cd "$repository_root/backend" && uv run --no-sync python -m copilot download-runtime --in-process)
+
 echo "== Frontend: npm ci"
 (cd "$repository_root/frontend" && npm ci)
 
