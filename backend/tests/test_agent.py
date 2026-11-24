@@ -9,15 +9,15 @@ import contextlib
 import secrets
 import threading
 import time
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import anyio
 import pytest
-from anyio.from_thread import BlockingPortal
+from conftest import portal_of
 from fastapi.testclient import TestClient
-from model_stand_in import ModelStandIn, running_stand_in
+from model_stand_in import ModelStandIn
 
 from app import agent as agent_module
 from app.agent import (
@@ -35,45 +35,9 @@ from app.agent import (
 from app.config import Settings
 from app.main import app
 
-# Variables that send traffic through a proxy. The runtime honours them, so
-# they are removed: the tests must reach the stand-in directly, whatever the
-# machine that runs them has set.
-PROXY_VARIABLES = (
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-)
-
 # How long a test waits for the stand-in to see something. Only reached when
 # a test fails, so it does not slow a good run.
 STAND_IN_WAIT_SECONDS = 10.0
-
-
-@pytest.fixture
-def stand_in() -> Iterator[ModelStandIn]:
-    with running_stand_in() as server:
-        yield server
-
-
-@pytest.fixture
-def stand_in_address(monkeypatch: pytest.MonkeyPatch, stand_in: ModelStandIn) -> None:
-    # Points the settings at the stand-in, with no key yet.
-    for name in PROXY_VARIABLES:
-        monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
-    monkeypatch.setenv("no_proxy", "127.0.0.1")
-    monkeypatch.setenv("POC_MODEL_PROVIDER_ADDRESS", stand_in.address)
-
-
-@pytest.fixture
-def model_key(monkeypatch: pytest.MonkeyPatch, stand_in_address: None) -> str:
-    # Adds a key made at run time to the settings that point at the stand-in.
-    key = secrets.token_urlsafe(24)
-    monkeypatch.setenv("POC_MODEL_API_KEY", key)
-    return key
 
 
 @asynccontextmanager
@@ -99,13 +63,6 @@ class MovedClock:
 
     def move_on(self, seconds: float) -> None:
         self._moved_by += seconds
-
-
-def portal_of(client: TestClient) -> BlockingPortal:
-    # The test client runs the application on an event loop of its own. The
-    # portal lets a test call the agent's async methods on that loop.
-    assert client.portal is not None
-    return client.portal
 
 
 async def wait_until_free(agent: Agent, conversation_id: str) -> None:
