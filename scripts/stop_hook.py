@@ -2,7 +2,7 @@
 """Claude Code "Stop" hook: run every check before the main agent ends its turn.
 
 Claude Code passes a JSON object on standard input. Exit codes (from
-https://code.claude.com/docs/en/hooks, read 2026-11-24):
+https://code.claude.com/docs/en/hooks, read 2026-11-23):
 0 lets the agent end; 2 keeps the agent working and gives it our standard
 error text; any other non-zero code is shown to the user and does not block.
 Uses the standard library only, so it runs before any dependency is installed.

@@ -9,7 +9,7 @@ Marks: `[ ]` not started, `[~]` in progress, `[x]` done.
 - [x] Write the project background in `README.md`
 - [x] Owner reads the English files
 - [x] Remove decision records 0001 to 0006 (the owner's choice on 2026-11-23). They held working rules, which stay in `AGENTS.md` and `CLAUDE.md`. Decision records are now only for product design choices that are costly to change
-- [ ] Owner sets the default branch to `main` on GitHub
+- [x] Owner sets the default branch to `main` on GitHub. Seen on 2026-11-23: `git remote show origin` names `main` as the default branch
 - [ ] Owner protects `main` on GitHub: changes only through a pull request
 - [x] Check that the limits in `.claude/settings.json` are loaded in a new session (both variables are present)
 - [x] Test that the concurrent limit is enforced: on 2026-11-23, with the owner's approval, four trivial subagents were started at once. Three ran at the same time and the fourth was refused with "Concurrent subagent limit reached"
@@ -72,8 +72,17 @@ How the tasks are done:
 
 The tasks:
 
-- [ ] 1. Skeleton and automatic checks. The owner approved this as the first task on 2026-11-23. A `backend` folder with an empty FastAPI application. A `frontend` folder made with `create-vite`. Linters, type checks and tests for both. The checks run on every pull request. A hook runs them before a session ends. A check that every path in the document map exists. A setup script for the cloud environment that installs the dependencies.
+- [~] 1. Skeleton and automatic checks. The owner approved this as the first task on 2026-11-23. A `backend` folder with an empty FastAPI application. A `frontend` folder made with `create-vite`. Linters, type checks and tests for both. The checks run on every pull request. A hook runs them before a session ends. A check that every path in the document map exists. A setup script for the cloud environment that installs the dependencies.
   - Accepted when: one command runs every check; the same checks run on a pull request and pass; a test that fails on purpose makes them fail, shown once; the document map check lets a path be missing only if the map marks it "created at first use"; the check commands are written into `AGENTS.md`. Approval of this plan covers that one edit of `AGENTS.md`.
+  - Built on 2026-11-23 in pull request #9. How each point was shown: `./scripts/check.sh` is the one command; it ran on the pull request and passed; a test that fails on purpose made it fail in the local run and on the pull request, and made the Stop hook block, and the test was then removed; tests cover the "created at first use" rule; the check commands are in `AGENTS.md`. Two review rounds found nothing that must be fixed. Nine suggestions were taken. One was not: refusing absolute paths in the document map.
+  - Still open: the setup script in the settings of the cloud environment waits for the owner's approval. It calls `scripts/setup.sh`.
+  - Small choices made inside the plan. The owner was told in conversation on 2026-11-23:
+    - Backend tools: `uv` for the dependencies, `ruff` as linter and formatter, `mypy` in strict mode, `pytest`. The official FastAPI template uses the same set.
+    - Frontend tools: TypeScript, ESLint, Vitest, `npm`. `create-vite` now makes Oxlint by default. The `--eslint` option was used, because ESLint is the long-standing linter. Changing to Oxlint later is cheap.
+    - The empty backend has one endpoint, `/health`, so that the tests have something to call.
+    - The Stop hook runs at the end of every turn of the main agent, not only at the end of a session. It blocks once. If the checks still fail, it reports and lets the agent stop, so that it cannot loop forever.
+    - The Python files in `scripts/` follow the same rules as the backend. The rules have one copy, in `backend/pyproject.toml`.
+    - The tests use `httpx2`, because the test client of FastAPI now warns that `httpx` is deprecated.
 - [ ] 2. Database and users. A SQLite file with two tables: the users, and the conversations with their owner. SQL written by hand. A script that creates users.
   - Accepted when: tests show that the tables are made on first start and that the script creates a user; no password is stored in a form that can be read back.
 - [ ] 3. Sign-in. An endpoint takes a user name and a password and returns a signed token. Every other endpoint needs a valid token. The code follows the official FastAPI full-stack template, and what is borrowed is recorded in `docs/sources.md`.
