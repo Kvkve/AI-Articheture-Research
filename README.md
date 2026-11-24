@@ -58,6 +58,7 @@ The parts, from left to right:
 - `docs/status.md` says where the work stands now.
 - `docs/tasks.md` lists milestones and tasks.
 - `docs/decisions/README.md` lists every design decision and its status.
+- `docs/architecture.md` shows what is built now and where the code of each part is.
 - `docs/research/` holds research reports and raw notes.
 - `backend/` holds the backend API (Python and FastAPI).
 - `frontend/` holds the web interface (React and TypeScript).

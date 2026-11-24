@@ -59,6 +59,8 @@ The model's reasoning in the interface (the owner's wish, 2026-11-23): shown, in
 
 Where requests are processed (the owner agreed on 2026-11-23): the first PoC leaves the provider's default, because it sends test content only. See "Later".
 
+A diagram of what is built (chosen by the owner on 2026-11-24): `docs/architecture.md` shows the parts that exist, how a request travels, and where the code of each part is. `README.md` keeps the target. The reasons: it records the system as it grows, and it matches what the owner wants to understand, which is the parts, the path of a request and the place of the data. The format is Markdown with Mermaid diagrams, because GitHub draws them and an update changes a few lines of text. An HTML page was considered: it looks better, but GitHub shows it as source code and each update costs much more. The main agent drew the first version. After that, `implementer` updates the file as part of each task, `reviewer` checks it against the code, and the main agent reads it when it verifies. A separate subagent for the diagram was considered and not chosen: it would read the code again and save nothing. The known risk is that the file goes out of date. The task after task 1 adds an automatic check for one kind of that.
+
 ### Plan
 
 The main agent proposed this plan on 2026-11-23. The owner approved it on the same day.
@@ -83,6 +85,8 @@ The tasks:
     - The Stop hook runs at the end of every turn of the main agent, not only at the end of a session. It blocks once. If the checks still fail, it reports and lets the agent stop, so that it cannot loop forever.
     - The Python files in `scripts/` follow the same rules as the backend. The rules have one copy, in `backend/pyproject.toml`.
     - The tests use `httpx2`, because the test client of FastAPI now warns that `httpx` is deprecated.
+- [ ] Before task 2: a check for `docs/architecture.md`. Every path written in backticks in that file must exist. The check runs as a step of `scripts/check.sh`. It catches a file that was renamed or removed while the diagram was not updated. It does not catch a new part that was never drawn: `reviewer` checks that.
+  - Accepted when: tests show that a missing path makes the check fail and names the path; the check passes on the real file; `scripts/check.sh` runs it.
 - [ ] 2. Database and users. A SQLite file with two tables: the users, and the conversations with their owner. SQL written by hand. A script that creates users.
   - Accepted when: tests show that the tables are made on first start and that the script creates a user; no password is stored in a form that can be read back.
 - [ ] 3. Sign-in. An endpoint takes a user name and a password and returns a signed token. Every other endpoint needs a valid token. The code follows the official FastAPI full-stack template, and what is borrowed is recorded in `docs/sources.md`.

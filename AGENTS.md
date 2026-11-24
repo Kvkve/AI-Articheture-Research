@@ -48,6 +48,7 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 | Starting a session | `docs/status.md` | Where the work stands, the next step, how to run and verify |
 | Choosing what to do next | `docs/tasks.md` | Milestones and the task list |
 | You need the purpose, target architecture or scope | `README.md` | Project background |
+| You need to know what is built now and where its code is | `docs/architecture.md` | Diagrams of the parts that exist and of how a request travels; a table of where the code of each part is |
 | Making or changing a design choice | `docs/decisions/README.md` | Index of decisions; each decision is a file in the same folder |
 | You need evidence or want to cite something | `docs/research/reports/` | Research reports; raw notes are in `docs/research/research_notes/` |
 | Borrowing outside code | `docs/sources.md` | Third-party sources and licenses |

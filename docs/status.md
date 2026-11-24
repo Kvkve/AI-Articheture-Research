@@ -15,6 +15,7 @@ Updated 2026-11-24 (US Eastern Time).
   - `.github/workflows/checks.yml` runs `scripts/check.sh` on every pull request and on every push to `main`.
   - A Stop hook in `.claude/settings.json` runs `scripts/check.sh` at the end of every turn of the main agent.
   - `docs/sources.md` records borrowed code. The `create-vite` template is its first entry.
+- `docs/architecture.md` shows what is built now: the parts, how a request travels, how a change gets checked, and where the code of each part is. The owner asked for it on 2026-11-24. Its diagrams are Mermaid text, which GitHub draws. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`.
 - The choices of the first PoC in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
   - The runtime runs inside the backend's own process.
@@ -57,8 +58,9 @@ These points come from the owner. The rules themselves are in `AGENTS.md` and `C
 
 ## Next step
 
-1. Task 2 of the plan: the database and the users. Start a new session for it, on the project environment `AI-Articheture-Research`.
-2. Then the tasks of the plan in order, one at a time.
+1. The small task before task 2 in `docs/tasks.md`: a check that every path named in `docs/architecture.md` exists. Start a new session for it, on the project environment `AI-Articheture-Research`.
+2. Task 2 of the plan: the database and the users.
+3. Then the tasks of the plan in order, one at a time. Each brief asks `implementer` to update `docs/architecture.md`.
 
 How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent.
 
