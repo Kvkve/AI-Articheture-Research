@@ -203,7 +203,7 @@ The tasks:
     - `./scripts/check.sh` takes about 80 seconds, and every later test that starts the backend adds one second. The package `pytest-xdist` (MIT) would run the tests side by side and shorten this. It was not added. The owner was told on 2026-11-24.
     - The runtime looks at the git repository in the working directory of the backend. Whether a working directory for each session stops this was not tried.
   - The diagram was drawn in the session and looked right.
-- [~] 5. Conversations. Endpoints to start a conversation, to list the user's own conversations and to read one conversation's history. The ownership table is checked before every action.
+- [x] 5. Conversations. Endpoints to start a conversation, to list the user's own conversations and to read one conversation's history. The ownership table is checked before every action.
   - Accepted when: tests show that the list holds only the user's own conversations; reading another user's conversation is refused, and the refusal does not tell whether that conversation exists.
   - From the owner's choice in task 2: the list gives the title of each conversation. A conversation with no message yet has no title.
   - The owner's four choices on 2026-11-24:
@@ -211,6 +211,43 @@ The tasks:
     - The order of the list: by the time of the last activity, the latest first. A conversation that the user comes back to moves to the top, as in common chat products. The main agent had recommended the time of creation, as the simpler start. The cost that was accepted: the table of conversations gets one more column, the time of the last activity; task 6 writes it at every message; a database file made before task 5 lacks the column and must be deleted, because the project has no tool that changes a table. The other option, the time of creation, needs no new column, and a conversation that is continued stays in its place.
     - A conversation that is half made. Starting a conversation has two steps: the SDK makes the session folder and gives the id, then the application stores the row that says who owns it. When the first step works and the second fails, the session folder stays on disk and the endpoint answers with an error. No row names the folder, so no user can reach it. The cost that was accepted: nothing cleans such folders up. The other options were: delete the session at once, which needs a fourth action in the agent module, and the delete can fail too; and store the row first, which leaves a conversation that the user sees in the list and cannot open, and needs a change to the module of task 4.
     - The status codes when the agent module fails inside these endpoints. 409 when the conversation is still answering after the longest wait. 500 for every other failure, such as session files that are missing for a row, or a runtime that failed. Both answers have the JSON shape of every other error. The cause goes to the log of the backend and not to the browser. Task 6 uses the same place and adds its own errors. The other options were: 404 for missing session files, which makes broken data look like an ordinary "not found"; and no choice until task 6, which leaves the plain-text 500 of the framework until then.
+  - Built on 2026-11-24 in pull request #14. How each point was shown:
+    - The list holds only the user's own conversations: two users start two and three conversations, and each list holds exactly that user's ids. The main agent made the list ignore the user, in memory, and the test failed.
+    - Reading another user's conversation is refused, and the refusal does not tell whether the conversation exists: one user asks for the id of another user's conversation, for an id that no conversation has, and for an id of another form. The three answers are compared whole, status and body. They are the same 404. A second test shows that none of the three requests reaches the agent module. The main agent made the look-up ignore the user, in memory, and both tests failed.
+    - The list gives the title: a title that is in the table reaches the list, and a conversation with no title gives `null`. No endpoint writes a title yet, so the test writes it with SQL.
+    - Tests also show:
+      - Starting a conversation answers 201, stores one row for the right user with two equal times, and makes a session whose history is empty.
+      - The history gives the messages in order with their roles. The test sends two messages through the agent module against the stand-in, because no endpoint sends yet.
+      - The list follows the time of the last activity. Of two conversations with the same time, the one made later comes first.
+      - A conversation that is still answering gets 409, and another error of the agent module gets 500. The text of the error is in the log and not in the answer.
+      - A row whose session files are gone gets 500.
+      - When the row cannot be stored, the answer is 500, the list stays empty, the session folder stays on disk, and the log names it.
+    - The test that every endpoint needs a token found the three new endpoints by itself. It passes with no change.
+    - The main agent also ran the real backend by hand on scratch data, with two users. Each user saw only the user's own conversations. The three kinds of "not found" gave the same answer. With the session folder of a conversation deleted by hand, the history answered 500, and the cause was in the log only. The generated API documentation lists the three endpoints with their error answers and marks both times as date-time.
+  - Small choices made inside the plan. The owner was told in conversation on 2026-11-24:
+    - An entry of the list has four fields: the id, the title, the time it was made and the time of the last activity. The fourth is there because the list is ordered by it.
+    - The answers of the list and of the history are objects with one list inside, so that a field can be added later without breaking a frontend. The list is under the name "conversations", and the history under the name "messages".
+    - There is no paging.
+    - Both times of a conversation are stored in UTC with milliseconds, because whole seconds would often be equal. They leave the API as ISO 8601 text. How many digits follow the second is not part of the contract: today there are six.
+    - Starting a conversation takes no body and answers 201.
+    - An id of another form than the ids of the agent module gets the same 404 as a conversation of another user.
+    - `backend/app/conversations.py` holds the SQL of the table of conversations, as `backend/app/users.py` does for the users. `backend/app/agent_errors.py` is the one place that gives an error of the agent module its status code.
+    - The list does not call the agent module, so its endpoint is a plain function that runs in a worker thread. The other two run on the event loop of the backend, and their short database calls block it for a moment.
+    - No code handles a database file from before this task, and the table has no index on the owner.
+    - The fixtures of the stand-in moved from `backend/tests/test_agent.py` to `backend/tests/conftest.py`, so that two test files use them. The list of columns in `backend/tests/test_database.py` got the new column. No other existing test changed.
+  - Two review rounds. Neither found anything that must be fixed.
+    - Before the first review, the main agent made one change: the endpoint of the list became a plain function, because it does not call the agent module.
+    - The first round gave three suggestions. All were taken, by the main agent, in a few lines each. The generated API documentation says only what is true about the 500 answers. The arrow from the endpoints to the conversations module in `docs/architecture.md` names every use of that module. The test of 409 checks the text of the answer and the log.
+    - The first round also named one case that was not taken: an id with an encoded slash does not reach the endpoint, and gets the 404 text of the framework. It tells nothing about a conversation, because no id holds a slash.
+    - The second round found all three closed and nothing new in the code. It pointed out that the first known limit below was not written down yet.
+  - Known limits. They are accepted for the first PoC and are not fixed:
+    - A database error gets the JSON shape of the other errors only when the row of a new conversation cannot be stored. Any other database error, such as a locked file while the list or the history is read, gets the plain-text 500 of the framework.
+    - A session whose row could not be stored stays on disk, and nothing cleans it up. This is the owner's third choice.
+    - A database file from before this task lacks the new column, and the list then fails. Delete the file and the folder of the session files together.
+    - The time of the last activity is set when the conversation is made. Nothing changes it until task 6.
+    - A request for the history waits while the conversation is answering, up to the wait setting, and then gets 409. The wait comes from the agent module of task 4.
+    - The 12 tests of this task each start the application, and each start adds about one second to the checks.
+  - The diagram was drawn in the session and looked right.
 - [ ] 6. Chat with streaming. An endpoint takes a message for a conversation and answers with Server-Sent Events in the project's own message format. The format has three kinds of message: a piece of text, the end, and an error.
   - Accepted when: tests against the stand-in show that the pieces arrive as separate messages in order and that the stream ends with the end message; an error from the provider reaches the browser as an error message and the stream closes; a message to another user's conversation is refused; the generated API documentation describes the endpoints and the message format.
   - From the owner's choice in task 2: the first message of a conversation sets its title, which is the opening of that message. How many characters it keeps is a setting.
