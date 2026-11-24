@@ -59,5 +59,8 @@ The parts, from left to right:
 - `docs/tasks.md` lists milestones and tasks.
 - `docs/decisions/README.md` lists every design decision and its status.
 - `docs/research/` holds research reports and raw notes.
+- `backend/` holds the backend API (Python and FastAPI).
+- `frontend/` holds the web interface (React and TypeScript).
+- `scripts/` holds the commands that install the dependencies and run the checks.
 
 Files are in English. The owner's learning notes and the research reports written for the owner are in Chinese.
