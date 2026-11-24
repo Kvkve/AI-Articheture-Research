@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS conversations (
 """
 
 
-def connect(database_file: Path) -> sqlite3.Connection:
+def connect(database_file: Path, check_same_thread: bool = True) -> sqlite3.Connection:
     database_file.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(database_file)
+    connection = sqlite3.connect(database_file, check_same_thread=check_same_thread)
     # SQLite does not check foreign keys unless each connection asks for it.
     connection.execute("PRAGMA foreign_keys = ON")
     connection.row_factory = sqlite3.Row
