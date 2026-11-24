@@ -8,7 +8,7 @@ from conftest import SavedUser
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.config import Settings, get_settings
+from app.config import LONGEST_TOKEN_EXPIRE_MINUTES, Settings, get_settings
 from app.main import app
 from app.security import ALGORITHM, create_access_token
 
@@ -75,6 +75,36 @@ def test_a_lifetime_of_zero_or_less_is_refused(
 
     with pytest.raises(ValidationError):
         Settings()
+
+
+def test_a_lifetime_above_one_year_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "POC_TOKEN_EXPIRE_MINUTES", str(LONGEST_TOKEN_EXPIRE_MINUTES + 1)
+    )
+
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_sign_in_works_with_the_longest_lifetime_allowed(
+    monkeypatch: pytest.MonkeyPatch,
+    add_user: Callable[[str], SavedUser],
+) -> None:
+    monkeypatch.setenv("POC_TOKEN_EXPIRE_MINUTES", str(LONGEST_TOKEN_EXPIRE_MINUTES))
+    alice = add_user("alice")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/login/access-token",
+            data={"username": alice.username, "password": alice.password},
+        )
+        token = response.json()["access_token"]
+        me = client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 200
+    assert me.status_code == 200
 
 
 def test_create_access_token_sets_the_expiry_from_the_lifetime() -> None:

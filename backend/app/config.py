@@ -13,6 +13,10 @@ BACKEND_FOLDER = Path(__file__).resolve().parent.parent
 # HS256 needs a key of at least 32 bytes to be as strong as its hash.
 SHORTEST_TOKEN_SECRET_KEY = 32
 
+# One year. A much larger lifetime puts the expiry time past the largest date
+# that Python can hold, and then every sign-in answers 500.
+LONGEST_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365
+
 
 def make_random_token_secret_key() -> SecretStr:
     return SecretStr(secrets.token_urlsafe(32))
@@ -32,7 +36,9 @@ class Settings(BaseSettings):
     token_secret_key: SecretStr = Field(default_factory=make_random_token_secret_key)
 
     # 8 days, as in the FastAPI full-stack template.
-    token_expire_minutes: int = Field(default=60 * 24 * 8, gt=0)
+    token_expire_minutes: int = Field(
+        default=60 * 24 * 8, gt=0, le=LONGEST_TOKEN_EXPIRE_MINUTES
+    )
 
     @field_validator("token_secret_key")
     @classmethod
@@ -48,6 +54,8 @@ class Settings(BaseSettings):
 # With a random key, every new Settings object has a different key. So the
 # application makes the settings once per process and shares that one
 # object. Tests clear this cache to give each test its own settings.
+# The start-up step in backend/app/main.py calls it before the first request
+# is served, so two first requests cannot each make their own settings.
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
