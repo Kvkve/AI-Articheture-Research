@@ -1,74 +1,73 @@
 # What is built now
 
-This file shows the parts of the system that exist today, and where the code of each part is. The target that the project works toward is in `README.md`. The plan is in `docs/tasks.md`.
+This file shows everything that is built today in one diagram, down to the file that holds each component. The target that the project works toward is in `README.md`. The plan is in `docs/tasks.md`.
 
-Keep this file to one page. Show parts, not every file. Update it in the same change that adds, removes or moves a part.
+One diagram shows everything. Each box is a component, with the file that holds it. Update the diagram and the table in the same change that adds, removes or moves a component.
 
 Shows the state after task 1 of the first PoC: the skeleton and the automatic checks.
 
-## The parts
+## The whole picture
 
 ```mermaid
-flowchart LR
-    B["Browser"]
-    FE["Web interface<br/>frontend/<br/>today: one page with a heading"]
-    API["Backend API<br/>backend/<br/>today: one endpoint, GET /health"]
-    B -->|"loads the page"| FE
-    B -->|"can call /health by hand"| API
-    FE -.->|"not connected yet"| API
+flowchart TB
+    subgraph PRODUCT["The product"]
+        B["Browser"]
+
+        subgraph FE["Web interface: frontend/"]
+            HTML["index.html<br/>the empty page the browser loads"]
+            MAIN["src/main.tsx<br/>starts React on that page"]
+            APP["src/App.tsx<br/>the page content: one heading"]
+            HTML --> MAIN --> APP
+        end
+
+        subgraph BE["Backend API: backend/"]
+            UV["uvicorn<br/>listens on a network port"]
+            FAST["app/main.py<br/>the FastAPI application: a list of<br/>addresses and their functions"]
+            HEALTH["GET /health<br/>answers: status ok"]
+            NB["Not built yet:<br/>sign-in, database, conversations,<br/>agent SDK module, chat,<br/>the link to the web interface"]
+            UV --> FAST --> HEALTH
+            FAST -.-> NB
+        end
+
+        B -->|"loads the page"| HTML
+        B -->|"sends a request"| UV
+    end
+
+    subgraph CH["The checks"]
+        P["A person or an agent<br/>by hand"]
+        HOOK["Claude Code, when the main agent ends a turn<br/>scripts/stop_hook.py<br/>switched on in .claude/settings.json"]
+        GH["GitHub, on every pull request<br/>.github/workflows/checks.yml"]
+        CHECK["scripts/check.sh<br/>the one command that runs every check"]
+        MAP["Step 1: the document map<br/>scripts/check_document_map.py<br/>every path in the map of AGENTS.md exists"]
+        PY["Step 2: Python code in backend/ and scripts/<br/>ruff, mypy, pytest<br/>rules: backend/pyproject.toml<br/>tests: backend/tests/ and scripts/tests/"]
+        TS["Step 3: code in frontend/<br/>ESLint, TypeScript compiler, Vitest<br/>rules: frontend/eslint.config.js<br/>tests: frontend/src/App.test.tsx"]
+        P --> CHECK
+        HOOK --> CHECK
+        GH --> CHECK
+        CHECK --> MAP --> PY --> TS
+    end
+
+    subgraph DEP["Installing dependencies"]
+        WHO["A person, GitHub before the checks,<br/>or a new cloud session"]
+        SETUP["scripts/setup.sh<br/>installs the outside packages"]
+        LOCK["backend/uv.lock<br/>frontend/package-lock.json<br/>the exact version of each package"]
+        WHO --> SETUP
+        SETUP -->|"reads"| LOCK
+    end
 ```
 
-Two parts exist, and they do not talk to each other yet. Task 7 connects them.
+How to read it:
 
-Not built yet: sign-in, the database, the conversations, the module that touches the agent SDK, and chat with streaming. Each is a task in `docs/tasks.md`.
-
-## How one request travels
-
-The only request the backend answers today is `GET /health`.
-
-```mermaid
-sequenceDiagram
-    participant C as Browser
-    participant S as uvicorn
-    participant A as FastAPI application
-    C->>S: GET /health
-    S->>A: hand the request over
-    A->>A: find the function for /health and run it
-    A-->>S: {"status": "ok"}
-    S-->>C: answer, status 200
-```
-
-- uvicorn is the program that listens on a network port. It turns each request into a call of the application.
-- The FastAPI application is `backend/app/main.py`. It holds the list of endpoints and the function behind each one.
-- In the tests there is no uvicorn. The test calls the application directly.
-
-The web interface has no request of its own yet. The browser loads `frontend/index.html`, which starts `frontend/src/main.tsx`, which draws the page in `frontend/src/App.tsx`.
-
-## How a change gets checked
-
-```mermaid
-flowchart TD
-    P["A person or an agent<br/>runs the command by hand"]
-    G["GitHub, on every pull request<br/>.github/workflows/checks.yml"]
-    H["Claude Code, when the main agent ends a turn<br/>scripts/stop_hook.py"]
-    C["scripts/check.sh<br/>the one command that runs every check"]
-    D["1. Document map<br/>every path in the map of AGENTS.md exists"]
-    PY["2. Python code in backend/ and scripts/<br/>ruff, mypy, pytest"]
-    TS["3. Code in frontend/<br/>ESLint, TypeScript compiler, Vitest"]
-    OK["All checks passed"]
-    P --> C
-    G --> C
-    H --> C
-    C --> D --> PY --> TS --> OK
-```
-
-- Three callers run the same command. So a pass on one machine means the same as a pass on GitHub.
-- The steps run in this order. The command stops at the first step that fails and names it.
+- An arrow means "calls" or "starts". The dotted arrow points at what does not exist yet.
+- The web interface and the backend API are the product. They do not talk to each other yet. Task 7 connects them.
+- The checks are not part of the product. They look at its code: step 2 at `backend/`, step 3 at `frontend/`.
+- A request to the backend goes from the browser to uvicorn, then to the application, then to the function for that address. The answer goes back the same way. In the tests there is no uvicorn: the test calls the application directly.
+- Three callers run the same check command. So a pass on one machine means the same as a pass on GitHub. The steps run in order, and the command stops at the first step that fails.
 - In steps 2 and 3, the first tool looks for careless code, the second checks the types, and the third runs the tests.
 
 ## Where the code is
 
-| Part | Code | What it does |
+| Component | Code | What it does |
 |---|---|---|
 | Web interface | `frontend/src/` | The page the user sees. Today it shows one heading. |
 | Backend API | `backend/app/main.py` | Receives requests and answers them. Today it has one endpoint, `/health`. |

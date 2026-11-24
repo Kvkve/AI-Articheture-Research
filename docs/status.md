@@ -15,7 +15,7 @@ Updated 2026-11-24 (US Eastern Time).
   - `.github/workflows/checks.yml` runs `scripts/check.sh` on every pull request and on every push to `main`.
   - A Stop hook in `.claude/settings.json` runs `scripts/check.sh` at the end of every turn of the main agent.
   - `docs/sources.md` records borrowed code. The `create-vite` template is its first entry.
-- `docs/architecture.md` shows what is built now: the parts, how a request travels, how a change gets checked, and where the code of each part is. The owner asked for it on 2026-11-24. Its diagrams are Mermaid text, which GitHub draws. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`.
+- `docs/architecture.md` shows what is built now in one diagram, down to the file that holds each component, with a table of what each component does. The owner asked for it on 2026-11-24, as one whole picture and not several small ones. The diagram has three groups: the product, the checks, and installing dependencies. Each group has no arrow to another group, because that is what makes Mermaid place them side by side. Its diagrams are Mermaid text, which GitHub draws. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`.
 - The choices of the first PoC in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
   - The runtime runs inside the backend's own process.
