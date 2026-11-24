@@ -14,7 +14,6 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from app.agent_errors import BUSY_TEXT, FAILED_TEXT
 from app.conversations import (
     Conversation,
     create_conversation,
@@ -72,11 +71,22 @@ NOT_FOUND_ANSWER = {
 }
 BUSY_ANSWER = {
     "model": ErrorMessage,
-    "description": f"The conversation stayed busy for too long. {BUSY_TEXT}",
+    "description": (
+        "The conversation is still answering a message after the longest "
+        "wait. Try again later."
+    ),
 }
-FAILED_ANSWER = {
+# The cause of a failure is in the log of the backend, not in the answer.
+AGENT_FAILED_ANSWER = {
     "model": ErrorMessage,
-    "description": f"The agent or the database failed. {FAILED_TEXT}",
+    "description": "The agent module failed.",
+}
+NOT_STARTED_ANSWER = {
+    "model": ErrorMessage,
+    "description": (
+        "The agent module failed, or the row of the new conversation could "
+        "not be stored."
+    ),
 }
 
 
@@ -96,7 +106,7 @@ def read_current_user(user: CurrentUser) -> User:
     tags=["conversations"],
     summary="Start a conversation",
     status_code=status.HTTP_201_CREATED,
-    responses={status.HTTP_500_INTERNAL_SERVER_ERROR: FAILED_ANSWER},
+    responses={status.HTTP_500_INTERNAL_SERVER_ERROR: NOT_STARTED_ANSWER},
 )
 async def start_conversation(
     user: CurrentUser, connection: ConnectionDependency, agent: AgentDependency
@@ -140,7 +150,7 @@ def read_conversations(
     responses={
         status.HTTP_404_NOT_FOUND: NOT_FOUND_ANSWER,
         status.HTTP_409_CONFLICT: BUSY_ANSWER,
-        status.HTTP_500_INTERNAL_SERVER_ERROR: FAILED_ANSWER,
+        status.HTTP_500_INTERNAL_SERVER_ERROR: AGENT_FAILED_ANSWER,
     },
 )
 async def read_messages(

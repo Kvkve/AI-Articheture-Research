@@ -57,7 +57,7 @@ flowchart TB
             DEPS -->|"reads the token"| SEC
             DEPS -->|"finds the user"| USERS
             DEPS -->|"gives an endpoint the agent"| AGENT
-            PROT -->|"before the agent:<br/>is it the user's own"| CONVS
+            PROT -->|"stores and lists rows;<br/>before the agent:<br/>is it the user's own"| CONVS
             PROT -->|"start a conversation,<br/>read the history"| AGENT
             AGENT --> CONFIG
             AGENT -->|"resume, send, read events,<br/>stop, disconnect"| RUNTIME

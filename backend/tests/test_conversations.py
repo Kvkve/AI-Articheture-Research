@@ -21,6 +21,7 @@ from app.agent import (
     ConversationBusyError,
     HistoryMessage,
 )
+from app.agent_errors import BUSY_TEXT
 from app.database import connect
 from app.main import app
 
@@ -286,6 +287,7 @@ def test_a_busy_conversation_gets_409(
     add_user: Callable[[str], SavedUser],
     sign_in: Callable[[SavedUser], str],
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     token = sign_in(add_user("alice"))
     conversation_id = start_conversation(client, token)["id"]
@@ -299,8 +301,10 @@ def test_a_busy_conversation_gets_409(
     )
 
     assert response.status_code == 409
-    assert set(response.json()) == {"detail"}
+    # The text for a busy conversation, and not the text for a failure.
+    assert response.json() == {"detail": BUSY_TEXT}
     assert error_text not in response.text
+    assert any(error_text in record.getMessage() for record in caplog.records)
 
 
 @pytest.mark.parametrize("action", ["read_history", "start_conversation"])
