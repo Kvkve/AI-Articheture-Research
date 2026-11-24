@@ -25,6 +25,10 @@ def test_create_user_stores_a_hash_not_the_password(database_file: Path) -> None
     connection.close()
     assert row["username"] == "alice"
     assert row["password_hash"] != password
+    # The other checks would also pass for a scheme that can be reversed, such
+    # as encryption with a random start value. This prefix names Argon2, which
+    # is one-way.
+    assert row["password_hash"].startswith("$argon2id$")
     assert verify_password(password, row["password_hash"])
     assert password.encode() not in database_file.read_bytes()
 

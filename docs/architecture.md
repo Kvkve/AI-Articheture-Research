@@ -47,7 +47,7 @@ flowchart TB
 
         DB[("SQLite database file<br/>tables: users, conversations")]
         ADMIN["A person, by hand"]
-        DBCODE -->|"reads and writes"| DB
+        DBCODE -->|"opens the file, creates the tables"| DB
         USERS -->|"writes a row to users"| DB
         ADMIN -->|"runs"| SCRIPT
 
@@ -81,8 +81,8 @@ flowchart TB
 
 How to read it:
 
-- An arrow means "calls" or "starts", unless its label says "reads" or "writes". The dotted arrow points at what does not exist yet.
-- The round box is a place where data lives. The database is one SQLite file on the backend's disk. By default it is the file app.db in a folder named data inside the backend folder. An environment variable, POC_DATABASE_FILE, can name another file. The file is made at run time and is not kept in the repository.
+- An arrow means "calls" or "starts". An arrow into the database says in its label what is done to the file. The dotted arrow points at what does not exist yet.
+- The box drawn as a cylinder is a place where data lives. The database is one SQLite file on the backend's disk. By default it is the file app.db in a folder named data inside the backend folder. An environment variable, POC_DATABASE_FILE, can name another file. The file is made at run time and is not kept in the repository.
 - The database has two tables: the users, and the conversations with the user who owns each one. Only the users table is filled today. Task 5 fills the conversations table.
 - When the backend starts, it creates the tables if they are missing. A later start leaves the data alone.
 - A person creates each user by hand with the script. The script asks for the password twice and stores only a one-way hash of it: the password cannot be read back from the database.
