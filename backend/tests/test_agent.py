@@ -396,7 +396,10 @@ def test_a_history_read_that_waits_while_the_agent_stops_ends_with_an_agent_erro
     stand_in: ModelStandIn,
 ) -> None:
     # The answer is read on while the agent stops. Its clean-up frees the
-    # conversation during the stop, and the waiting read wakes then.
+    # conversation during the stop, and the waiting read wakes then. The read
+    # ends at the module's own "not started" check, before it reaches the
+    # SDK. So this test does not show that a plain RuntimeError of the SDK is
+    # turned into an error of the module: no test shows that on its own.
     stand_in.answer_and_hold("one ", "two ", hold_after=1)
 
     async def steps() -> None:
@@ -415,7 +418,7 @@ def test_a_history_read_that_waits_while_the_agent_stops_ends_with_an_agent_erro
 
         with contextlib.suppress(AgentError):
             await reading_answer
-        # An error of this module, and not a plain RuntimeError of the SDK.
+        # The read ends with an error of this module.
         with pytest.raises(AgentError):
             await reading_history
 
