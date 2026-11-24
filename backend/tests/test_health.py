@@ -10,7 +10,3 @@ def test_health_returns_ok() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
-
-
-def test_fails_on_purpose_to_show_that_the_checks_catch_it() -> None:
-    assert 1 + 1 == 3
