@@ -50,7 +50,7 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 | You need the purpose, target architecture or scope | `README.md` | Project background |
 | Making or changing a design choice | `docs/decisions/README.md` | Index of decisions; each decision is a file in the same folder |
 | You need evidence or want to cite something | `docs/research/reports/` | Research reports; raw notes are in `docs/research/research_notes/` |
-| Borrowing outside code | `docs/sources.md` | Third-party sources and licenses (created at first use) |
+| Borrowing outside code | `docs/sources.md` | Third-party sources and licenses |
 | Explaining to the owner or reviewing a lesson | `docs/learning/` | The owner's learning notes (created at first use) |
 
 ## Keeping documents in order

@@ -1,6 +1,6 @@
 # Current status
 
-Updated 2026-11-23 (US Eastern Time).
+Updated 2026-11-24 (US Eastern Time).
 
 ## Where the work stands
 
@@ -80,7 +80,6 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
 
 - The setup script of the cloud environment is saved but not proven. It first runs when a new session starts. Check in the next session whether the dependencies are already installed: `./scripts/check.sh` says so. If they are not, `./scripts/setup.sh` installs them in a few seconds. One known cause: the first new session after the script was saved builds a stored copy of the machine, and that copy holds the dependencies only if `scripts/setup.sh` was on `main` by then. The copy is rebuilt after about seven days, or when the script changes.
 - The Stop hook has been run by hand and by tests. Whether Claude Code runs it at the end of a turn in a cloud session will show in the next session.
-- The marks "(created at first use)" in the document map of `AGENTS.md` still stand for `docs/sources.md`, which now exists. Removing the mark is an edit of `AGENTS.md` and needs the owner's approval. The check passes either way.
 - One task under "Set the rules" waits for the owner: protect `main` on GitHub. When `main` is protected, the check named `checks` can be made required for merging. The default branch is already `main`.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
 - The real trial of the SDK was one run with one model, and it was not the model now chosen. Not tested: latency over many runs, long answers, provider errors such as a wrong key or a rate limit, and changing the settings the runtime chooses. Task 8 of the plan covers part of this.
