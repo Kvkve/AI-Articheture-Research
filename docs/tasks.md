@@ -47,6 +47,10 @@ The frontend (chosen by the owner on 2026-11-23): hand-written React components.
 
 Where the project skeleton comes from (chosen by the owner on 2026-11-23): the frontend skeleton is made with `create-vite`, and the backend is a hand-written FastAPI application. The sign-in part follows the way of the official FastAPI full-stack template and is not invented here. The reasons: the skeleton stays small, and sign-in is the one part where a mistake is a security hole. Borrowed code is recorded in `docs/sources.md`. The owner's guide for the first PoC: do not make the start complicated.
 
+How users sign in (chosen by the owner on 2026-11-23): a user name and a password. After sign-in the backend gives the browser a signed token, and the browser sends it with every request. Its job in the first PoC is to stand in for single sign-on, so that several users can be told apart. It is kept to the least: a small script creates the users, and there is no page to register, no password reset and no email. Later, single sign-on replaces only the part that issues the token.
+
+The database (chosen by the owner on 2026-11-23): SQLite, with SQL written by hand and no library that maps classes to tables. It holds two small tables: the users, and which user owns which conversation. The owner knows SQL well and has used SQLite. It fits one machine only.
+
 - [ ] At the end of the first PoC, look back at the choice of the Copilot SDK with what was learned. Write decision record 0007 if the choice stays and has become costly to change
 - [ ] At the end of the first PoC, look back at the working rules. Prune `AGENTS.md` and `CLAUDE.md`. Ask whether the owner's reasons for choices and the owner's reading of changes are enough to find gaps in understanding. Ask whether two untested rules work: "a lesson becomes a check or a rule" and "no new documents outside the document map"
 
@@ -54,6 +58,6 @@ Where the project skeleton comes from (chosen by the owner on 2026-11-23): the f
 
 Response cache, knowledge sources, connections to databases and other APIs, deployment. Not scheduled yet.
 
-Before a build for hundreds of users, look again at two choices of the first PoC (the owner asked about this on 2026-11-23). Where the runtime runs: inside the backend's process, a crash stops every conversation. Where the conversation history lives: with several backend machines, session files on one machine's disk cannot be read by the others. The choices of the Copilot SDK and of Server-Sent Events are expected to carry over.
+Before a build for hundreds of users, look again at three choices of the first PoC (the owner asked about this on 2026-11-23). Where the runtime runs: inside the backend's process, a crash stops every conversation. Where the conversation history lives: with several backend machines, session files on one machine's disk cannot be read by the others. The database: SQLite fits one machine only, so a database server is needed. The choices of the Copilot SDK and of Server-Sent Events are expected to carry over.
 
 Each team may later have its own frontend (the owner's hope, 2026-11-23). Two ways to get there, not chosen yet: one shared frontend with settings for each team, or separate frontends that each team builds on the shared backend API, perhaps with shared components.
