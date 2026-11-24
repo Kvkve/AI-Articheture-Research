@@ -7,6 +7,7 @@ Updated 2026-11-24 (US Eastern Time).
 - The project has three stages so far: setting the rules (done), the technical research (done), and the first PoC (in progress). Use these plain names with the owner. The owner did not agree to short labels for stages and does not want them.
 - The first PoC has ten tasks. They are in `docs/tasks.md` under "First PoC", with every design choice and its reason.
 - Task 1, the skeleton and the automatic checks, is done (pull request #9).
+- The small task before task 2, a check for `docs/architecture.md`, is done (pull request #10).
 - What task 1 added:
   - `backend/`: an empty FastAPI application with one endpoint, `/health`. Its dependencies are managed with `uv` and locked in `backend/uv.lock`.
   - `frontend/`: a React and TypeScript application made with `create-vite`, with the demo page removed. Its dependencies are locked in `frontend/package-lock.json`.
@@ -15,7 +16,11 @@ Updated 2026-11-24 (US Eastern Time).
   - `.github/workflows/checks.yml` runs `scripts/check.sh` on every pull request and on every push to `main`.
   - A Stop hook in `.claude/settings.json` runs `scripts/check.sh` at the end of every turn of the main agent.
   - `docs/sources.md` records borrowed code. The `create-vite` template is its first entry.
-- `docs/architecture.md` shows what is built now in one diagram, down to the file that holds each component, with a table of what each component does. The owner asked for it on 2026-11-24, as one whole picture and not several small ones. The diagram has three groups: the product, the checks, and installing dependencies. Each group has no arrow to another group, because that is what makes Mermaid place them side by side. Its diagrams are Mermaid text, which GitHub draws. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`.
+- What the small task before task 2 added:
+  - `scripts/check_architecture.py` checks that every path written in backticks in `docs/architecture.md` exists. It is the second step of `scripts/check.sh`.
+  - It catches a file that was renamed or removed while `docs/architecture.md` was not updated. It does not catch a new part that was never drawn. `reviewer` checks that.
+  - The check does not read the diagram, because the diagram has no backticks. So the table in `docs/architecture.md` lists every file that the diagram names. The owner chose this on 2026-11-24. Nothing automatic checks that the diagram and the table agree.
+- `docs/architecture.md` shows what is built now in one diagram, down to the file that holds each component, with a table of what each component does. The owner asked for it on 2026-11-24, as one whole picture and not several small ones. The diagram has three groups: the product, the checks, and installing dependencies. Each group has no arrow to another group, because that is what makes Mermaid place them side by side. Its diagrams are Mermaid text, which GitHub draws. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`. The file states its own rules near its top.
 - The choices of the first PoC in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
   - The runtime runs inside the backend's own process.
@@ -41,7 +46,7 @@ Updated 2026-11-24 (US Eastern Time).
   - Under BYOK the SDK reports a cost of 0. The application must work out cost from the token counts.
   - The SDK changes fast. Versions must be pinned.
 - Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. Only task 8 uses it. The automatic checks need no key.
-- Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable and a setup script. The script calls `scripts/setup.sh` when a new machine is built for a session. The owner approved it on 2026-11-23.
+- Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable and a setup script. The script calls `scripts/setup.sh` when a new machine is built for a session. The owner approved it on 2026-11-23. It works: the session of 2026-11-24 started on this environment with the dependencies installed, and `./scripts/check.sh` passed with no setup run by hand.
 
 ## How the work with the owner goes
 
@@ -61,9 +66,8 @@ These points come from the owner. The rules themselves are in `AGENTS.md` and `C
 
 ## Next step
 
-1. The small task before task 2 in `docs/tasks.md`: a check that every path named in `docs/architecture.md` exists. Start a new session for it, on the project environment `AI-Articheture-Research`.
-2. Task 2 of the plan: the database and the users.
-3. Then the tasks of the plan in order, one at a time. Each brief asks `implementer` to update `docs/architecture.md`.
+1. Task 2 of the plan: the database and the users. Start a new session for it, on the project environment `AI-Articheture-Research`.
+2. Then the tasks of the plan in order, one at a time. Each brief asks `implementer` to update `docs/architecture.md`, and names the rules written near the top of that file.
 
 How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent.
 
@@ -78,13 +82,16 @@ How to start a session on the project environment: on the screen for starting a 
 - Where the rules of the checks are: `backend/pyproject.toml` for Python, `frontend/eslint.config.js` and the `tsconfig` files for TypeScript.
 - A new Python file in `scripts/` must be added to the list `known-first-party` in `backend/pyproject.toml`. Without this, the import-order rule sorts its imports wrongly.
 - Run pytest from `backend/` with no path argument, or with `-k`. A path argument outside `backend/` skips the settings, and the tests in `scripts/tests/` then cannot import their modules.
+- In `docs/architecture.md`, put only paths and addresses of the API that begin with `/` in backticks. Any other text in backticks fails the check. Every file that the diagram names must also be in the table.
+- A cloud session has a hook of its own that asks for a push when a turn ends with commits that are not pushed. Push the work branch before ending a turn.
 
 The trial scripts for the SDK are printed at the end of `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. Never print the key. Do not name the key variable `ANTHROPIC_API_KEY`: the session's own program may read that name. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form.
 
 ## Open items
 
-- The setup script of the cloud environment is saved but not proven. It first runs when a new session starts. Check in the next session whether the dependencies are already installed: `./scripts/check.sh` says so. If they are not, `./scripts/setup.sh` installs them in a few seconds. One known cause: the first new session after the script was saved builds a stored copy of the machine, and that copy holds the dependencies only if `scripts/setup.sh` was on `main` by then. The copy is rebuilt after about seven days, or when the script changes.
-- The Stop hook has been run by hand and by tests. Whether Claude Code runs it at the end of a turn in a cloud session will show in the next session.
+- `AGENTS.md` describes what `scripts/check.sh` checks, under "Check commands". That sentence does not name the new step for `docs/architecture.md`. The sentence is still true, but it is not complete. A change to `AGENTS.md` needs the owner's approval. The main agent asked on 2026-11-24.
+- The Stop hook very likely runs in a cloud session, but this is not shown directly. What was seen on 2026-11-24: the session's own record lists two Stop hooks at the end of each turn. The first took about four seconds, which fits `scripts/check.sh`. The second took a few hundredths of a second and is the session's own reminder to push. The record does not name the commands. A direct proof would be a turn that ends while a check fails.
+- The diagram of `docs/architecture.md` cannot be drawn inside a cloud session so far. One attempt on 2026-11-24, with a browser and the Mermaid library, was denied by the session's permission rules. The main agent checks the Mermaid text by reading it. The owner sees the drawn diagram on GitHub.
 - One task under "Set the rules" waits for the owner: protect `main` on GitHub. When `main` is protected, the check named `checks` can be made required for merging. The default branch is already `main`.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
 - The real trial of the SDK was one run with one model, and it was not the model now chosen. Not tested: latency over many runs, long answers, provider errors such as a wrong key or a rate limit, and changing the settings the runtime chooses. Task 8 of the plan covers part of this.
