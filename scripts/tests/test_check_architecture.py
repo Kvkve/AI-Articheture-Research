@@ -65,3 +65,21 @@ def test_path_ending_in_slash_that_is_a_file_fails(tmp_path: Path) -> None:
 
     assert len(problems) == 1
     assert "frontend/" in problems[0]
+
+
+def test_unclosed_fenced_code_block_fails(tmp_path: Path) -> None:
+    text = "```mermaid\nflowchart TB\n\nAfter the diagram: `after/the/diagram.py`.\n"
+
+    problems = find_problems(text, tmp_path)
+
+    assert len(problems) == 1
+    assert "never closed" in problems[0]
+
+
+def test_missing_folder_fails_and_names_path(tmp_path: Path) -> None:
+    text = "The tests are in `backend/tests/`.\n"
+
+    problems = find_problems(text, tmp_path)
+
+    assert len(problems) == 1
+    assert "backend/tests/" in problems[0]

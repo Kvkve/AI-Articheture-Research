@@ -13,6 +13,7 @@ from pathlib import Path
 ARCHITECTURE_FILE = "docs/architecture.md"
 FENCE_START = "```"
 API_ADDRESS_START = "/"
+UNCLOSED_FENCE_MESSAGE = "A fenced code block is opened and never closed."
 BACKTICK_TEXT = re.compile(r"`([^`]+)`")
 
 
@@ -32,6 +33,13 @@ def find_backtick_texts(architecture_text: str) -> list[str]:
 def find_problems(architecture_text: str, root: Path) -> list[str]:
     """Return one message per problem. An empty list means every path exists."""
     problems: list[str] = []
+    fence_lines = [
+        line for line in architecture_text.splitlines() if line.startswith(FENCE_START)
+    ]
+    # An odd count means a block is never closed. Every path after it would be
+    # skipped, and the check would pass without reading them.
+    if len(fence_lines) % 2 == 1:
+        problems.append(UNCLOSED_FENCE_MESSAGE)
     for path_text in find_backtick_texts(architecture_text):
         # Text that starts with "/" is an address of the backend API, not a file.
         if path_text.startswith(API_ADDRESS_START):
