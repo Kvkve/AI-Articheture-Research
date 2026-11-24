@@ -78,7 +78,7 @@ Files in this repository are in English. Two kinds are in Chinese: the owner's l
 Check commands:
 
 - `./scripts/setup.sh` installs the dependencies of the backend and the frontend from their lock files.
-- `./scripts/check.sh` runs every check and stops at the first failure. It checks the document map, then the Python code in `backend/` and `scripts/` (ruff, mypy, pytest), then the code in `frontend/` (ESLint, the TypeScript compiler, Vitest).
+- `./scripts/check.sh` runs every check and stops at the first failure. It checks the document map and the paths in `docs/architecture.md`, then the Python code in `backend/` and `scripts/` (ruff, mypy, pytest), then the code in `frontend/` (ESLint, the TypeScript compiler, Vitest).
 - The same command runs on every pull request, and before the main agent ends a turn in Claude Code.
 
 The rules for each language are in the tool settings: `backend/pyproject.toml` for Python, and `frontend/eslint.config.js` with the `tsconfig` files for TypeScript.
