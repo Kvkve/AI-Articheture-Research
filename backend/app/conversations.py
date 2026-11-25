@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class Conversation(BaseModel):
     # The id is also the id of the conversation's session in the agent module.
     id: str
-    # None until the first message of the conversation; a later task fills it.
+    # None until the first message of the conversation, which sets it.
     title: str | None
     # The table stores these as text in UTC. Typed as datetime, the generated
     # API documentation marks them as date-time.
@@ -68,3 +68,27 @@ def find_conversation(
     if row is None:
         return None
     return _conversation_from(row)
+
+
+def make_title(text: str, length: int) -> str:
+    # split() with no argument splits at every run of white space, line
+    # breaks too, and drops the white space at both ends. Joining with one
+    # space then gives one line, which fits in a list of conversations.
+    return " ".join(text.split())[:length]
+
+
+def record_message(
+    connection: sqlite3.Connection, conversation_id: str, title: str
+) -> None:
+    # Sets the time of the last activity to now, in the same form as the
+    # default of the table, and writes the title only when the row has none.
+    # COALESCE keeps the title that is there, so only the first message of a
+    # conversation sets it.
+    with connection:
+        connection.execute(
+            "UPDATE conversations "
+            "SET last_active_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), "
+            "title = COALESCE(title, ?) "
+            "WHERE id = ?",
+            (title, conversation_id),
+        )

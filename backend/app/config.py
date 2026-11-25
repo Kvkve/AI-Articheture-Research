@@ -73,6 +73,15 @@ class Settings(BaseSettings):
     # is freed, so a provider that stops answering cannot block it for ever.
     answer_wait_seconds: float = Field(default=120, gt=0)
 
+    # The longest message a user may send, in characters. The SDK stores each
+    # message and sends it again with every later message of the
+    # conversation, so one very long message would cost much at every turn.
+    longest_message_characters: int = Field(default=20_000, gt=0)
+
+    # How many characters of the first message become the conversation's
+    # title.
+    title_characters: int = Field(default=50, gt=0)
+
     @field_validator("token_secret_key")
     @classmethod
     def refuse_a_short_key(cls, key: SecretStr) -> SecretStr:

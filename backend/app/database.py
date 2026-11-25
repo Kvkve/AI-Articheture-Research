@@ -4,7 +4,7 @@ from pathlib import Path
 # conversations.id is text, not a number, because it is the same value as the
 # session id that the agent module makes.
 # conversations.title stays empty until the first message of the
-# conversation; a later task fills it.
+# conversation, which sets it.
 # Every time is in UTC. The two times of a conversation also keep
 # milliseconds, because the list of conversations is ordered by
 # last_active_at, and whole seconds would often be equal.

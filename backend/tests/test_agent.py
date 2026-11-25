@@ -15,7 +15,7 @@ from pathlib import Path
 
 import anyio
 import pytest
-from conftest import portal_of
+from conftest import STAND_IN_WAIT_SECONDS, portal_of, wait_until_free
 from fastapi.testclient import TestClient
 from model_stand_in import ModelStandIn
 
@@ -34,10 +34,6 @@ from app.agent import (
 )
 from app.config import Settings
 from app.main import app
-
-# How long a test waits for the stand-in to see something. Only reached when
-# a test fails, so it does not slow a good run.
-STAND_IN_WAIT_SECONDS = 10.0
 
 
 @asynccontextmanager
@@ -63,14 +59,6 @@ class MovedClock:
 
     def move_on(self, seconds: float) -> None:
         self._moved_by += seconds
-
-
-async def wait_until_free(agent: Agent, conversation_id: str) -> None:
-    # Reads the agent's private table of busy conversations, because nothing
-    # public waits without also opening a session.
-    in_use = agent._in_use.get(conversation_id)
-    if in_use is not None:
-        await asyncio.wait_for(in_use.freed.wait(), STAND_IN_WAIT_SECONDS)
 
 
 async def read_all(answer: Answer) -> list[str]:
