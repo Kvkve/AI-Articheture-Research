@@ -1,6 +1,6 @@
 # Current status
 
-Updated 2026-11-24 (US Eastern Time).
+Updated 2026-11-25 (US Eastern Time).
 
 ## Where the work stands
 
@@ -14,6 +14,7 @@ Updated 2026-11-24 (US Eastern Time).
   - Task 4, the module that touches the SDK (pull request #13).
   - Task 5, the endpoints for conversations (pull request #14).
   - Task 6, chat with streaming (pull request #15).
+  - Task 7, the frontend and the browser test (pull request #16).
 - What is built, file by file, is in `docs/architecture.md`: one diagram and a table of what each component does. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`. The file states its own rules near its top.
 - What tasks 1 to 3 added, in short:
   - `backend/` is a FastAPI application. Its dependencies are managed with `uv` and locked in `backend/uv.lock`. `frontend/` is a React and TypeScript application made with `create-vite`.
@@ -64,7 +65,18 @@ Updated 2026-11-24 (US Eastern Time).
   - `backend/app/conversations.py` has two new functions: `make_title` and `record_message`.
   - `backend/tests/test_send_message.py` holds the 25 tests of the endpoint.
   - No table changed. A database file from task 5 still works.
-- The title of a conversation (the owner's choice on 2026-11-24): the table of conversations has a `title` column. The title is the opening of the first message. Task 6 writes it. The list of conversations gives it, and gives `null` while there is none. The frontend of task 7 shows "New conversation" for `null`.
+- What task 7 added:
+  - The web interface, in `frontend/src/`. `docs/architecture.md` names each file and what it does. The backend did not change.
+  - The page calls its own address, on paths that begin with `/api`. The development server of Vite passes these calls on to the backend with the prefix taken off. The rule is in `frontend/vite.config.ts`. The address of the backend is the variable `POC_BACKEND_ADDRESS`, by default `http://127.0.0.1:8000`. This is for development only.
+  - `frontend/src/backend.ts` is the only file that calls `fetch`. A rule in `frontend/eslint.config.js` fails the checks when another file of `frontend/src/` does. The module turns each answer into its own types and errors: `SignInAgainError` for a 401, `BackendError` with a text for the user, `UnreachableError`, and `AnswerStoppedError`.
+  - `frontend/src/answerStream.ts` reads the stream of an answer from byte chunks. It skips a kind of message that it does not know. Task 9 relies on this.
+  - The token is in `sessionStorage`, and only `frontend/src/tokenStore.ts` touches it. A conversation has the address `#/conversations/<conversation id>`, and only `frontend/src/address.ts` reads and writes it.
+  - What the chat does at each ending of a stream. "end": the answer stays. "error": a line shows its text. A stream that was cut: a line says that the connection was lost. "Stop": the page closes the connection, and a line says that the answer was stopped. A stream that breaks its format: a line says that the page cannot read the answer. After every ending but "end" the page reads the history again and shows what it holds. Leaving a conversation, signing out and a reload close the connection too.
+  - The names on the page that a test can use: the fields "User name" and "Password" and the button "Sign in"; the text "Signed in as" with the name, and the button "Sign out"; the navigation "Conversations", with a link for each conversation and the button "New conversation"; the text box "Message" with the buttons "Send" and "Stop"; a message of the user is an article named "Your message", and an answer is an article named "Answer". Ask for the text box by its role: a search by label for "Message" also finds "Your message".
+  - The frontend has 50 unit tests in three files next to the code: `App.test.tsx`, `backend.test.ts` and `answerStream.test.ts`.
+  - The browser test, `backend/tests/test_browser.py`. It starts the stand-in, the backend under uvicorn, the development server and a headless Chromium, and drives the page as two users. It is marked "browser". The plain pytest leaves it out, and the last step of `./scripts/check.sh` runs it alone.
+  - `backend/pyproject.toml` pins `playwright==1.63.0`. `scripts/setup.sh` installs the browser for it, unless the machine says that it brings its own. The checks on GitHub install the system libraries of the browser, and passed with the browser test at the first try.
+- The title of a conversation (the owner's choice on 2026-11-24): the table of conversations has a `title` column. The title is the opening of the first message. Task 6 writes it. The list of conversations gives it, and gives `null` while there is none. The frontend shows "New conversation" for `null`.
 - The choices of the first PoC in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
   - The runtime runs inside the backend's own process.
@@ -88,6 +100,11 @@ Updated 2026-11-24 (US Eastern Time).
   - An error of the agent module gets 409 when the conversation is still answering, 503 when the backend has no model key, and 500 otherwise.
   - In the stream of an answer, the kind of a message is the field `type` of a JSON object. The "event:" line of Server-Sent Events is not used.
   - The longest message is a setting, 20,000 characters by default. The number is the main agent's estimate.
+  - The page reaches the backend through the development server of the frontend, which passes the calls on. The backend allows no other address.
+  - The browser keeps the token in the storage of the tab. A reload keeps the sign-in, and a closed tab ends it.
+  - A conversation has its own address in the browser, after the hash. The project wrote this itself, with no router library.
+  - The browser test is Python, with pytest and Playwright, and is the last step of the check command.
+  - The page is plain CSS written by hand. Leaving a conversation that is answering stops the answer.
   - No decision record is written. The choices are cheap to change in a first PoC. The next number is 0007.
 - What the owner wants from the project, said on 2026-11-23:
   - Do not make the start complicated.
@@ -110,9 +127,10 @@ Updated 2026-11-24 (US Eastern Time).
   - The SDK changes fast. It is pinned at exactly 2.0.1, the version of the trial runs. Version 2.0.2 came out on 2026-11-24.
   - The SDK can delete a session, with `delete_session` of its client. Seen in its source on 2026-11-24 and not tried. The agent module has no action for it.
   - The session files of a conversation are in a folder named by the conversation id, inside a folder named session-state in the folder of the session files. One test of task 5 reads this layout.
-- Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. The settings class reads it. So a backend that is started by hand in a session on that environment has the real key and the real provider address. **A message sent to such a backend calls the real model and costs money.** For a trial by hand that needs no model, start the backend with the variable removed, for example with `env -u POC_MODEL_API_KEY` in front of the command. It then answers a message with 503. To see answers with no real model, point it at the stand-in: see "How to run and verify". The tests are safe: `backend/tests/conftest.py` removes the key and the other model variables before every test. Only task 8 means to call the real model.
+- Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. The settings class reads it. So a backend that is started by hand in a session on that environment has the real key and the real provider address. **A message sent to such a backend calls the real model and costs money.** For a trial by hand that needs no model, start the backend with the variable removed, for example with `env -u POC_MODEL_API_KEY` in front of the command. It then answers a message with 503. To see answers with no real model, point it at the stand-in: see "How to run and verify". The tests are safe: `backend/tests/conftest.py` removes the key and the other model variables before every test. Only task 8 means to call the real model. The browser test is safe too: it gives the backend the environment of the test, and checks that the stand-in got the key of the test.
 - Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable and a setup script. The script calls `scripts/setup.sh` when a new machine is built for a session.
-  - Seen on 2026-11-24, in the sessions for task 3 and for task 4: the session started with the packages from before the last tasks. The checks failed at the mypy step with "Cannot find implementation or library stub". `./scripts/setup.sh` fixed it. Run it at the start of a session when a check fails this way. The sessions for task 5 and for task 6 started with the right packages.
+  - Seen on 2026-11-24, in the sessions for task 3 and for task 4: the session started with the packages from before the last tasks. The checks failed at the mypy step with "Cannot find implementation or library stub". `./scripts/setup.sh` fixed it. Run it at the start of a session when a check fails this way. The sessions for task 5 and for task 6 started with the right packages. The session for task 7 on 2026-11-25 failed this way again.
+  - A cloud session has a Chromium installed for exactly Playwright 1.63.0, in the folder that the variable `PLAYWRIGHT_BROWSERS_PATH` names, and it sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`. The environment does not allow the hosts that Playwright downloads a browser from. This is why `backend/pyproject.toml` pins `playwright==1.63.0`. If the browser test one day cannot find its browser in a new session, the image of the session has moved to another version: `npm ls -g playwright` shows it. Change the pin and `backend/uv.lock` to that version.
 
 ## How the work with the owner goes
 
@@ -129,41 +147,34 @@ These points come from the owner. The rules themselves are in `AGENTS.md` and `C
 - How the owner learns, said on 2026-11-24. The owner studies general ideas elsewhere, in another session or with another tool: HTTP, APIs, tokens, streaming. The building goes on here. After each task the owner asks about it in broad terms: the summary in Chinese and what changed in the diagram of `docs/architecture.md`. The owner does not read code line by line. Configuration files and scripts are black boxes unless the owner asks.
 - The owner watches the usage of the main model, and asked about it on 2026-11-24. The main agent's reading of this, not the owner's words: keep each session to one task, and put long explanations in a separate session.
 - The owner means to get hands-on when building in the work setting. The main agent suggested that the owner runs the trial of task 8 in the browser in person. The owner has not said yes or no to that. Whether the owner writes any part by hand is the owner's choice. Do not set exercises.
-- A choice can be asked with the question form of the session, with the recommended option first. Each question must stand by itself, because the owner may see only the form. The owner answered the choices of tasks 3, 4, 5 and 6 this way. In task 5 the owner took another option than the recommended one for the order of the list. So the owner reads the options, and the costs must be written with care. In task 6 the main agent first wrote the options and the small choices it would make by itself in the conversation, in Chinese, and then asked with the form.
+- A choice can be asked with the question form of the session, with the recommended option first. Each question must stand by itself, because the owner may see only the form. The owner answered the choices of tasks 3, 4, 5 and 6 this way. In task 5 the owner took another option than the recommended one for the order of the list. So the owner reads the options, and the costs must be written with care. In task 6 the main agent first wrote the options and the small choices it would make by itself in the conversation, in Chinese, and then asked with the form. In task 7 it did the same, with a table of the options and their costs for each choice, and the owner took the four recommended options.
 
 ## Next step
 
-1. Task 7 of the plan: the frontend. Start a new session for it, on the project environment `AI-Articheture-Research`.
-2. Then the tasks of the plan in order, one at a time. Each brief asks `implementer` to update `docs/architecture.md`, and names the rules written near the top of that file.
+1. Task 8 of the plan: the trial with the real model. Start a new session for it, on the project environment `AI-Articheture-Research`. It is the only task that calls the real model.
+2. Then tasks 9 and 10 of the plan, one at a time.
 
-For task 7. Before the brief, list for the owner the choices that have more than one workable option. The main agent's guess at what they are, not checked:
+For task 8. Before the work, ask the owner how the trial runs. The main agent's guess at the options, not checked:
 
-- How the page reaches the backend while both run on one machine. The page and the backend have different addresses, and a browser does not let a page call another address unless that address allows it. One way is that the development server of the frontend passes the calls on to the backend. The other is that the backend allows the address of the page. The second adds a part to the backend that answers some requests before they reach an endpoint: see the last open item.
-- Where the browser keeps the token: in memory only, so that a reload signs the user out, or in the storage of the browser.
-- Whether a conversation has its own address in the browser, so that a reload opens the same conversation. The browser test of the plan reloads the page and expects the history.
-- Which tool runs the browser test, and where it runs. Playwright is installed in a cloud session. It is not a package of the project yet, and the checks on GitHub would have to install a browser.
-- How the page is styled: plain CSS written by hand, or a library.
+- The main agent runs the page in the cloud session against the backend with the real key, drives it with Playwright, and shows screenshots. The owner does not touch the page.
+- The owner runs the page in person. The page of a cloud session is on the machine of that session. Whether the owner can open it from outside was not tried. On the owner's own computer it needs the repository, `uv`, `npm` and a model key there.
+- The main agent suggested "in person" on 2026-11-24. The owner has not said yes or no.
 
-What is fixed already, and what the code gives:
+What is ready for task 8, and what is not known:
 
-- The plan of task 7 in `docs/tasks.md`, with its acceptance criteria and the line "From task 6".
-- The contract of the backend is the generated API documentation, at `/docs` and `/openapi.json`. Read the endpoint that sends a message there before the brief is written.
-- The frontend reads the stream with `fetch`. The `EventSource` of a browser cannot send a POST or a token. A reader of the stream splits it at empty lines, takes the line that begins with "data:", reads the JSON, and looks at `type`. It skips a line that begins with a colon. It must also work when one read gives half a message or two messages at once: the plan asks for unit tests of this module.
-- A kind of message that the frontend does not know must be skipped, not treated as an error. Task 9 adds a fourth kind.
-- The stop button only has to close the connection. The backend then stops the model and frees the conversation.
-- After an "error", a stop or a stream that was cut off, read the history again. It then holds the user's message with no answer under it.
-- A 401 on any request means "sign in again".
-- A 422 has a list under `detail`. For a text that is too long, the entry has the limit as `max_length` under `ctx`. A frontend that counts characters must count code points, not the `length` of a JavaScript string.
-- After a message is sent, its conversation moves to the top of the list and may have got its title. So read the list again after sending. The list gives `null` for no title, and the frontend shows "New conversation".
-- The times in the answers are ISO 8601 text in UTC, today with six digits after the second. A frontend must not depend on the count of digits.
-- The browser test needs a backend that points at the stand-in. "How to run and verify" says how the main agent started one by hand in task 6.
+- The plan of task 8 in `docs/tasks.md`, with its acceptance criteria.
+- A backend started by hand in a session on the project environment has the real key. "How to run and verify" says how to start the backend and the page together.
+- The default model is Claude Haiku 5.5, set in configuration. No run has used it yet. The one real run so far used another model.
+- The page has only been seen with the stand-in. Not seen with a real model: how fast the pieces come, a long answer with scrolling, and the Markdown that a model really writes. A table in an answer shows as plain text with bars, because the page has no add-on for tables.
+- The findings go into the trial note, `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`: the request settings that the runtime chooses for this model, the timing and the token counts. The task also finds out whether the application can change the thinking, effort and output limit settings. The session options of the SDK have fields named `reasoning_effort` and `reasoning_summary`.
+- Never print the key, and keep it out of every file.
 
 How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent.
 
 ## How to run and verify
 
 - Install the dependencies: `./scripts/setup.sh`. It needs `uv` and `npm`. It installs from the lock files only. Then it downloads the runtime of the SDK from `github.com`, if the cache does not hold it yet.
-- Run every check: `./scripts/check.sh`. It takes about 135 seconds, of which pytest takes about 130: about 95 tests stop the runtime of the SDK, and each stop takes one second inside the SDK. Every later test that starts the backend adds one second. It stops at the first failure and names the failed step. The last line of a good run is "All checks passed."
+- Run every check: `./scripts/check.sh`. It takes about 150 seconds, of which the tests of the backend take about 130: about 95 tests stop the runtime of the SDK, and each stop takes one second inside the SDK. Every later test that starts the backend adds one second. The tests of the frontend take about 2 seconds, and the browser test, the last step, about 6. It stops at the first failure and names the failed step. The last line of a good run is "All checks passed."
   - Run ruff and mypy through this command. A `ruff check` typed by hand from `backend/` with other paths reads the rules another way and reports errors that are not there.
 - Start the backend: `cd backend && uv run uvicorn app.main:app --reload`. Then open `http://127.0.0.1:8000/health` or the generated API documentation at `http://127.0.0.1:8000/docs`. The first start makes the database file and its tables, and the folder of the session files.
 - Create a user: `cd backend && uv run python -m app.create_user <user name>`. The script asks for the password twice. It also makes the database file and the tables if they are missing.
@@ -175,6 +186,7 @@ How to start a session on the project environment: on the screen for starting a 
   - The script puts `backend/tests` on its import path and starts the stand-in with `running_stand_in()` of `backend/tests/model_stand_in.py`. It tells the stand-in how to answer with `answer(...)`, `answer_and_hold(...)` or `fail(400)`.
   - It starts uvicorn as a child process. The environment of the child has no variable that begins with `POC_` and no proxy variable of the machine. It has `NO_PROXY=127.0.0.1`, `POC_MODEL_PROVIDER_ADDRESS` with the address of the stand-in, a made-up `POC_MODEL_API_KEY`, and scratch paths in `POC_DATABASE_FILE` and `POC_SESSION_DIRECTORY`.
   - It calls the backend with `httpx` and `trust_env=False`, so that the calls do not go through the proxy of the machine.
+  - On 2026-11-25 a helper of this kind also made two users and planned each answer to send two pieces, hold for three seconds, and send the rest. A person then sees an answer arrive in pieces and has time to press "Stop". Such a helper must stop its backend when it is killed: the first version left one running.
 - The secret key: with no variable, every start of the backend makes a new key, and the tokens from before are refused. With `--reload`, every saved change to the backend code is a restart. To keep the tokens, set `POC_TOKEN_SECRET_KEY` to a random text of at least 32 characters. Never write a key into a file of the repository.
 - Where the data is. By default both places are in the folder `data` inside `backend/`. Git ignores that folder.
   - The database file is `app.db`. The variable `POC_DATABASE_FILE` names another file.
@@ -185,8 +197,10 @@ How to start a session on the project environment: on the screen for starting a 
 - The model settings: `POC_MODEL_API_KEY`, `POC_MODEL_NAME`, `POC_MODEL_PROVIDER_TYPE`, `POC_MODEL_PROVIDER_ADDRESS`, `POC_SYSTEM_PROMPT` and `POC_ANSWER_WAIT_SECONDS`. The settings of sending: `POC_LONGEST_MESSAGE_CHARACTERS` and `POC_TITLE_CHARACTERS`. The defaults are in `backend/app/config.py`.
 - To look inside the database in a cloud session, use Python's `sqlite3` module. The `sqlite3` command-line tool is not installed there.
 - A line that the backend's own code writes to the log shows in the output of uvicorn with no level in front, for a warning or an error. Lines of a lower level are not shown.
-- Start the frontend: `cd frontend && npm run dev`. The command prints the address to open.
-- The backend and the frontend do not talk to each other yet. Task 7 connects them.
+- Start the page: `cd frontend && npm run dev`. The command prints the address to open. The page needs a backend that runs: by default the development server passes the calls on to `http://127.0.0.1:8000`, where the command above starts the backend. The variable `POC_BACKEND_ADDRESS` names another address.
+- Use the page: create a user with the script, open the address, and sign in. **With the real key in the environment, each message calls the real model and costs money.**
+- Run the tests of the frontend alone: `cd frontend && npm run test`. Run the browser test alone: `cd backend && uv run --no-sync pytest -m browser`.
+- Drive the page by hand in a cloud session with the Playwright that the session has installed: in a Node script, `require('playwright')` works from any folder, and `chromium.launch()` needs no options. Keep the script and its screenshots in a scratch folder. On 2026-11-25 the main agent tried the page this way, against a backend with the stand-in.
 - Where the rules of the checks are: `backend/pyproject.toml` for Python, `frontend/eslint.config.js` and the `tsconfig` files for TypeScript.
 - A new Python file in `scripts/` must be added to the list `known-first-party` in `backend/pyproject.toml`. Without this, the import-order rule sorts its imports wrongly.
 - Run pytest from `backend/` with no path argument, or with `-k`. A path argument outside `backend/` skips the settings, and the tests in `scripts/tests/` then cannot import their modules.
@@ -202,10 +216,16 @@ How to start a session on the project environment: on the screen for starting a 
   - pytest has no plugin for `async def` tests here. A test of the agent is a plain function that runs its steps with `asyncio.run()`. A test that starts the application calls the agent through the portal of the test client.
   - A test of an endpoint reaches the one agent object of the application as `app.state.agent`. It can replace an action on that object with `monkeypatch.setattr`, to record calls or to raise an error.
   - The tests of task 5 send a message through the agent object, and write a title or a time into the table with SQL, so that each tests its own endpoint alone. The tests of task 6 send through the endpoint.
+  - The browser test starts the backend and the development server as child processes on free ports, each in a process group of its own, and stops them at the end. The fixtures of `backend/tests/conftest.py` set the environment of the test process, and the backend gets that environment. When the test fails, pytest shows the text of the page, the console of the browser and what both servers wrote.
+- Frontend tests:
+  - They run in Vitest with a made-up page (jsdom). No request leaves a test: a test replaces `fetch` with `vi.stubGlobal`.
+  - The rule that only `frontend/src/backend.ts` calls `fetch` holds for the test files too.
+  - The tests of the stream reader feed it byte chunks that the test cuts where it wants.
+  - How to show that a test of the frontend catches a fault: copy the file to a scratch folder, change the file, run `npx vitest run` in `frontend/`, and put the copy back. For the browser test, change the file of the page or of the backend and put it back with `git checkout`, or work in a scratch copy of the two folders. This worked on 2026-11-25.
 - How to show that a test catches a fault, with no change to a file of the repository. This worked on 2026-11-24. Write a small Python file in a scratch folder that imports the application and adds the faulty part in memory. Run pytest from `backend/` with that folder and `.` in `PYTHONPATH`, and name the file with the option `-p`.
   - `backend/app/protected.py` imports the functions of `backend/app/conversations.py` by name, and the text of the stream's error message too. So the faulty part must replace the name in the module of the endpoints, not in the module it comes from.
 - In `docs/architecture.md`, put only paths that exist in the repository, and addresses of the API that begin with `/`, in backticks. Any other text in backticks fails the check. This includes the path of the database file, which is made at run time, the names of environment variables, and a method in front of an address. Every file that the diagram names must also be in the table.
-- How to draw the diagram of `docs/architecture.md` in a cloud session. This worked on 2026-11-24. Install the `mermaid` package with `npm` into a scratch folder outside the repository. Open a blank page in the browser that comes with the session's Playwright. Load the file `dist/mermaid.min.js` of the package into the page. Call `mermaid.render` with the text of the diagram and take a screenshot. The version was Mermaid 12.3.0. GitHub may draw with another version, so the picture on GitHub is the one that counts.
+- How to draw the diagram of `docs/architecture.md` in a cloud session. This worked on 2026-11-24. Install the `mermaid` package with `npm` into a scratch folder outside the repository. Open a blank page in the browser that comes with the session's Playwright. Load the file `dist/mermaid.min.js` of the package into the page. Call `mermaid.render` with the text of the diagram and take a screenshot. The version was Mermaid 12.3.0. GitHub may draw with another version, so the picture on GitHub is the one that counts. On 2026-11-25 the session refused the install of the package, for `implementer` and for the main agent. The diagram was then checked by reading its text: every box that an arrow names is there, every group is closed, and every file in a box is in the table. Do not work around such a refusal.
 - A cloud session has a hook of its own that asks for a commit and a push when a turn ends with changes that are not committed or not pushed. Push the work branch before ending a turn.
 - The Stop hook of the project runs in a cloud session too.
 - Subagents:
@@ -215,6 +235,9 @@ How to start a session on the project environment: on the screen for starting a 
   - Before the brief, the main agent can try an unsure point of a library in a small script in the scratch folder, and name the script in the brief. In task 6 two such scripts showed how the Server-Sent Events of FastAPI behave, and `implementer` built on them with no stop.
   - A limit in a brief that is not in the acceptance criteria of `docs/tasks.md` can stop `implementer`. On 2026-11-24 a time limit for the checks did. Say in the brief which points come from `docs/tasks.md` and which the main agent added. The brief of task 5 did, and `implementer` did not stop.
   - Ask `implementer` to report, for the main tests, whether it saw each one fail when the thing it guards was broken. The main agent then tries a few of these itself.
+  - A task in two parts: the main agent accepted and committed the first part, added the second part to the end of the brief file, and sent the same `implementer` a message. It kept what it had read. This worked on 2026-11-25.
+  - A draft pull request, opened before the review has ended, lets the checks on GitHub run early. On 2026-11-25 this showed that the browser test passes there, which no run in a session can show.
+  - The session can refuse an action of a subagent or of the main agent, such as the install of a package that no lock file names. Do not work around it. Tell the owner.
 
 The trial scripts for the SDK are printed at the end of `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. Never print the key. Do not name the key variable `ANTHROPIC_API_KEY`: the session's own program may read that name. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form.
 
@@ -224,9 +247,10 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
 - The real trial of the SDK was one run with one model, and it was not the model now chosen. Not tested with a real model: latency over many runs, long answers, provider errors such as a wrong key or a rate limit, stopping an answer, and changing the settings the runtime chooses. Task 8 of the plan covers part of this.
 - The time of a resume was measured with short conversations only. It grows with the length of the conversation. An issue report in the research says that resuming a very large session takes much memory.
-- `./scripts/check.sh` takes about 135 seconds and grows with every test that starts the backend. The package `pytest-xdist` (MIT) would run the tests side by side. It was not added. The owner was told on 2026-11-24 and has not asked for it.
+- `./scripts/check.sh` takes about 150 seconds and grows with every test that starts the backend. The package `pytest-xdist` (MIT) would run the tests side by side. It was not added. The owner was told on 2026-11-24 and has not asked for it.
 - The license of the runtime: the release package holds no license file. That the license of the repository `github/copilot-cli` covers the package is the main agent's inference.
 - One package that the SDK brings in, `certifi`, is under MPL-2.0, which the license list of `AGENTS.md` does not name. It is installed and not copied. The owner was told on 2026-11-24.
+- Task 7 brought in two more licenses that the list does not name, with installed packages: ISC (`@ungap/structured-clone`, under `react-markdown`) and PSF-2.0 (`greenlet`, under `playwright`, which is MIT and PSF-2.0). The owner accepted both on 2026-11-25.
 - The runtime looks at the git repository in the working directory of the backend and stores that directory in the session files. Whether a working directory for each session stops this was not tried.
 - Using a Copilot subscription in place of a model key is a documented sign-in method of the SDK. It is not tested, because it needs a subscription.
 - The SDK keeps the conversation content as plain files on disk. Whether these files can be encrypted was not found.
@@ -252,4 +276,13 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
   - Nothing limits how often a sign-in can be tried, or how long a password in a request may be.
   - The backend has no sign-out. A token works until it expires, 8 days by default.
 - The test that every endpoint needs a token uses the function `iter_route_contexts` of FastAPI, which the documentation of FastAPI does not describe. If a later version of FastAPI changes it, the test fails and must be written another way.
-- That test tries the endpoints only. A request that is answered before it reaches an endpoint is not tried. Task 7 may add such a part, to let the browser page call the backend from another address. Look at this then.
+- That test tries the endpoints only. A request that is answered before it reaches an endpoint is not tried. Task 7 added no such part: the owner chose that the development server passes the calls on. If the backend one day allows the address of a page, look at this then.
+- Known limits of the frontend, accepted for the first PoC. `docs/tasks.md` has them under task 7.
+  - The way the page reaches the backend is for development only. A deployment needs another part that passes the calls on.
+  - Any script on the page can read the token.
+  - A stopped or failed answer leaves the page: the history holds no part of it.
+  - When the history cannot be read again after a stop, an error or a cut, the user must reload the page.
+  - Two quick clicks on "New conversation" make two conversations. A slow read of the list can overwrite a newer one until the next read.
+  - A table in an answer shows as plain text. An image in an answer loads from any address: look at this before tools or knowledge sources are added.
+  - The types of the answers in `frontend/src/backend.ts` are written by hand. Only the browser test shows that they match the backend, and only for the path it takes.
+  - The browser test runs the development server, not a built page.

@@ -23,5 +23,11 @@ jobs:
 
       - run: ./scripts/setup.sh
 
+      # The browser of the browser test needs system libraries that the
+      # runner does not have. setup.sh does not install them, because that
+      # needs the system's package manager and root rights.
+      - run: uv run --no-sync playwright install-deps chromium
+        working-directory: backend
+
       # The same one command that people and the stop hook run.
       - run: ./scripts/check.sh
