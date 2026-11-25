@@ -10,7 +10,7 @@ Rules for this file:
 - Backticks are used only for paths and for addresses of the API that begin with `/`.
 - An automatic check, `scripts/check_architecture.py`, verifies that each path in backticks exists.
 
-Shows the state after task 4 of the first PoC: the skeleton, the automatic checks, the database with its users, sign-in, and the module that talks to the model through the Copilot SDK. No endpoint uses that module yet.
+Shows the state after task 5 of the first PoC: the skeleton, the automatic checks, the database with its users and conversations, sign-in, the module that talks to the model through the Copilot SDK, and the endpoints that start a conversation, list the user's conversations and read the history of one.
 
 ## The whole picture
 
@@ -31,7 +31,9 @@ flowchart TB
             FAST["app/main.py<br/>the FastAPI application: a list of<br/>addresses and their functions"]
             HEALTH["GET /health<br/>open: answers status ok"]
             LOGIN["app/login.py<br/>POST /login/access-token<br/>open: checks the name and password,<br/>gives a signed token"]
-            PROT["app/protected.py<br/>the router whose endpoints need a token<br/>GET /users/me: the signed-in user"]
+            PROT["app/protected.py<br/>the router whose endpoints need a token<br/>GET /users/me: the signed-in user<br/>POST /conversations: start a conversation<br/>GET /conversations: the user's own, latest activity first<br/>GET /conversations/{conversation_id}/messages:<br/>the history of one conversation"]
+            CONVS["app/conversations.py<br/>stores the row of a new conversation,<br/>lists a user's conversations,<br/>finds one by its id and its user"]
+            AERR["app/agent_errors.py<br/>turns an error of the agent module<br/>into 409 or 500, with a general text"]
             DEPS["app/dependencies.py<br/>what an endpoint can ask for:<br/>the settings, a database connection,<br/>the signed-in user from the token"]
             CONFIG["app/config.py<br/>the settings, read from<br/>environment variables, made once"]
             DBCODE["app/database.py<br/>opens the database file<br/>and creates the two tables"]
@@ -40,20 +42,23 @@ flowchart TB
             SEC["app/security.py<br/>turns a password into a one-way hash,<br/>makes and reads signed tokens"]
             AGENT["app/agent.py<br/>the one module that imports the SDK:<br/>start a conversation, send a message<br/>and get the answer in pieces,<br/>read the history; one message<br/>at a time per conversation"]
             RUNTIME["Copilot SDK runtime<br/>runs inside the backend's process;<br/>downloaded by scripts/setup.sh,<br/>not kept in the repository"]
-            NB["Not built yet:<br/>the endpoints for conversations and chat,<br/>the link to the web interface"]
+            NB["Not built yet:<br/>sending a message and getting the answer,<br/>the title of a conversation,<br/>the link to the web interface"]
             UV --> FAST --> HEALTH
             FAST --> LOGIN
             FAST --> PROT
             FAST -->|"at start: creates the tables"| DBCODE
             FAST -->|"at start: starts the runtime<br/>at shut-down: stops it"| AGENT
             FAST --> CONFIG
+            FAST -->|"adds the handlers<br/>for errors of the agent"| AERR
             LOGIN --> DEPS
             PROT -->|"before each endpoint:<br/>who is signed in"| DEPS
             DEPS --> CONFIG
             DEPS --> DBCODE
             DEPS -->|"reads the token"| SEC
             DEPS -->|"finds the user"| USERS
-            DEPS -.->|"gives an endpoint the agent<br/>(no endpoint asks yet)"| AGENT
+            DEPS -->|"gives an endpoint the agent"| AGENT
+            PROT -->|"stores and lists rows;<br/>before the agent:<br/>is it the user's own"| CONVS
+            PROT -->|"start a conversation,<br/>read the history"| AGENT
             AGENT --> CONFIG
             AGENT -->|"resume, send, read events,<br/>stop, disconnect"| RUNTIME
             LOGIN -->|"checks name and password"| USERS
@@ -72,6 +77,7 @@ flowchart TB
         ADMIN["A person, by hand"]
         DBCODE -->|"opens the file, creates the tables"| DB
         USERS -->|"writes and reads rows of users"| DB
+        CONVS -->|"writes and reads rows of conversations"| DB
         ADMIN -->|"runs"| SCRIPT
 
         B -->|"loads the page"| HTML
@@ -92,7 +98,7 @@ flowchart TB
         HOOK --> CHECK
         GH --> CHECK
         CHECK --> MAP --> ARCH --> PY --> TS
-        PY -->|"the tests of app/agent.py<br/>point the runtime at it"| STANDIN
+        PY -->|"the tests of app/agent.py and of<br/>the conversation endpoints<br/>point the runtime at it"| STANDIN
     end
 
     subgraph DEP["Installing dependencies"]
@@ -108,11 +114,11 @@ How to read it:
 
 - An arrow means "calls" or "starts". An arrow with a label says in the label what it does. The dotted arrow points at what does not exist yet.
 - The box drawn as a cylinder is a place where data lives. The database is one SQLite file on the backend's disk. By default it is the file app.db in a folder named data inside the backend folder. An environment variable, POC_DATABASE_FILE, can name another file. The file is made at run time and is not kept in the repository.
-- The database has two tables: the users, and the conversations with the user who owns each one. Only the users table is filled today. Task 5 fills the conversations table.
+- The database has two tables: the users, and the conversations with the user who owns each one. A row of conversations holds the id, the owner, a title, the time it was made and the time of its last activity. Both times are in UTC with milliseconds. The title stays empty, and the time of the last activity stays the time it was made, until task 6 sends messages.
 - When the backend starts, it creates the tables if they are missing. A later start leaves the data alone.
 - A person creates each user by hand with the script. The script asks for the password twice and stores only a one-way hash of it: the password cannot be read back from the database.
 - How a sign-in request travels: the browser sends a user name and a password as a form to `/login/access-token`. The application finds the user in the users table and checks the password against the stored hash. For an unknown name it still checks the password against a made-up hash, so that the answer takes about as long. A right pair gets a token: a short text that holds the user id and an expiry time, signed with the secret key. A wrong password and an unknown name get the same answer, so the answer does not tell which names exist.
-- How a request with a token travels: the browser sends the token in the header Authorization, after the word Bearer. Before the endpoint runs, the application checks the signature and the expiry time, reads the user id, and finds that user in the users table. If any step fails, the answer is 401, which means "sign in again", and the endpoint does not run. Today the one endpoint that needs a token is `/users/me`, which returns the id and the name of the signed-in user.
+- How a request with a token travels: the browser sends the token in the header Authorization, after the word Bearer. Before the endpoint runs, the application checks the signature and the expiry time, reads the user id, and finds that user in the users table. If any step fails, the answer is 401, which means "sign in again", and the endpoint does not run. The endpoints that need a token are `/users/me`, which returns the id and the name of the signed-in user, and the three endpoints of conversations below.
 - Which endpoints are open: `/health`, `/login/access-token`, and the pages of the generated API documentation, such as `/docs`. Every other endpoint is on the router of `backend/app/protected.py`, which asks for a token before each of its endpoints. Only the methods named in that list are open: for example, `/health` is open for GET and for no other method. A test sends three requests to each method of each endpoint outside the list: one with no token, one with a made-up text in place of the token, and one with a token signed with another key. It fails if any of them is answered. The test tries the endpoints only: it does not see a request that is answered before it reaches an endpoint.
 - Where the secret key comes from: from the environment variable POC_TOKEN_SECRET_KEY, which must have at least 32 characters. When it is not set, the backend makes a random key each time it starts. Then a restart of the backend signs every user out, because the old tokens were signed with the old key. A random key also fits one backend process only. With more than one process, each makes its own key, and a token from one is refused by another; then the variable must be set. A token lives for 8 days by default. The variable POC_TOKEN_EXPIRE_MINUTES changes that, to more than 0 and at most one year.
 - A token cannot be withdrawn before it expires. The backend keeps no list of the tokens it gave. The only way to end every token at once is to change the secret key.
@@ -120,7 +126,13 @@ How to read it:
 - `backend/app/agent.py` is the only file that imports the SDK. A rule of ruff in `backend/pyproject.toml` fails the checks when any other Python file in `backend/` or `scripts/` imports it. So the SDK can be replaced by changing one file.
 - The runtime of the SDK runs inside the backend's own process. The backend starts it when it starts, and stops it when it shuts down. It is a program of about 196 MB that `scripts/setup.sh` downloads into a cache folder outside the repository.
 - The model provider is outside the product. Its address, its type, the model name and the key come from environment variables: POC_MODEL_PROVIDER_ADDRESS, POC_MODEL_PROVIDER_TYPE, POC_MODEL_NAME and POC_MODEL_API_KEY. With no key, the backend still starts, and a message is refused. The system prompt of every conversation is the variable POC_SYSTEM_PROMPT, with a short default text.
-- How a message travels through the agent module. No endpoint does this yet: tasks 5 and 6 add them.
+- How a request to start a conversation travels: POST `/conversations`, with no body. The endpoint asks the agent module to start a conversation. The module makes the session in the session files and returns its id. The endpoint then stores a row with that id and the signed-in user in the table of conversations, and answers 201 with the new conversation. If the row cannot be stored, the session stays on disk with no row. No user can reach it, and nothing cleans it up. The endpoint writes its id to the log of the backend, at the level "error", and answers 500.
+- How the list travels: GET `/conversations` reads only the table of conversations, not the agent. It gives the signed-in user's own conversations, the latest activity first. Of two with the same time of the last activity, the one that was made later comes first.
+- How a request for the history travels: GET `/conversations/{conversation_id}/messages`. The endpoint first looks in the table of conversations for a row with this id and the signed-in user, in one query. When there is none, it answers 404 with "Conversation not found", and the agent module is not called. The answer is the same when the conversation belongs to another user, when no conversation has this id, and when the id has another form than the ids the module makes. So the answer does not tell whether a conversation exists. When the row is found, the endpoint asks the agent module for the history and answers with the messages in order, each with its role, "user" or "assistant", and its text.
+- The answers of the list and of the history are objects with one list inside, so that a field can be added later without breaking a frontend.
+- Which status code an error of the agent module gets: the endpoints let the error rise, and `backend/app/agent_errors.py` turns it into an answer. A conversation that is still answering after the longest wait gets 409. Every other error of the module gets 500, for example a row whose session files are gone, or a runtime that failed. Both answers are JSON with a fixed, general text. The text of the error itself goes to the log of the backend and never to the browser.
+- The two endpoints that call the agent module, start and history, run on the event loop of the backend, because the actions of the module are async. Their calls to the database then block the loop for a moment. This is accepted for the first PoC, because the calls are short and the database is a local file. The list does not call the module and runs in a worker thread, like every plain endpoint.
+- How a message travels through the agent module. No endpoint does this yet: task 6 adds it.
   1. Step one: the module checks the conversation id, checks that a model key is set, and checks that the conversation is not answering already. If any check fails, it refuses the message with an error, and nothing reaches the model. Otherwise it marks the conversation as answering.
   2. Step two: the module resumes the conversation's session from its files, with the project's system prompt, no tools, and the provider settings. It sends the message. The runtime sends the whole conversation to the model provider and gets the answer back in pieces. The module passes on each piece of text as it arrives.
   3. When the answer ends, the module disconnects the session, so no session stays open in memory, and marks the conversation free. The runtime has written the message and the answer to the session files.
@@ -137,12 +149,14 @@ How to read it:
 | Component | Code | What it does |
 |---|---|---|
 | Web interface | `frontend/index.html`, `frontend/src/main.tsx`, `frontend/src/App.tsx` | The page the user sees. `frontend/index.html` is the empty page the browser loads. `frontend/src/main.tsx` starts React on that page. `frontend/src/App.tsx` is the page content. Today it shows one heading. |
-| Backend API | `backend/app/main.py` | Receives requests and answers them. Adds the open endpoints, `/health` and the sign-in endpoint, and the router whose endpoints need a token. When it starts, it creates the database tables if they are missing, and makes the one agent object and starts the SDK's runtime. When it shuts down, it stops the runtime. |
+| Backend API | `backend/app/main.py` | Receives requests and answers them. Adds the open endpoints, `/health` and the sign-in endpoint, and the router whose endpoints need a token. Adds the handlers for errors of the agent module. When it starts, it creates the database tables if they are missing, and makes the one agent object and starts the SDK's runtime. When it shuts down, it stops the runtime. |
 | Sign-in endpoint | `backend/app/login.py` | `/login/access-token`. Takes a user name and a password as a form and gives back a signed token, or answers 400. Follows the official FastAPI full-stack template; see `docs/sources.md`. |
-| Endpoints that need a token | `backend/app/protected.py` | The router that asks for the signed-in user before each of its endpoints. Today it holds `/users/me`. |
-| What an endpoint can ask for | `backend/app/dependencies.py` | Gives an endpoint the settings, a database connection that is closed after the request, the signed-in user, and the agent object. Reads the token from the header and answers 401 when it is missing or not valid. Follows the template. No endpoint asks for the agent yet. |
+| Endpoints that need a token | `backend/app/protected.py` | The router that asks for the signed-in user before each of its endpoints. It holds `/users/me`, and three endpoints of conversations: POST `/conversations` starts one, GET `/conversations` lists the user's own, and GET `/conversations/{conversation_id}/messages` reads the history of one after checking that it is the user's own. |
+| Conversations | `backend/app/conversations.py` | Stores the row of a new conversation for a user. Lists a user's conversations, the latest activity first. Finds one conversation by its id and its user in one query, and finds nothing for a conversation of another user. The SQL is written by hand. |
+| Answers for errors of the agent | `backend/app/agent_errors.py` | Turns an error of the agent module that an endpoint lets rise into an answer: 409 for a conversation that is still answering, 500 for every other error. The answer has a general text; the text of the error goes to the log. `backend/app/main.py` adds these handlers to the application. |
+| What an endpoint can ask for | `backend/app/dependencies.py` | Gives an endpoint the settings, a database connection that is closed after the request, the signed-in user, and the agent object. Reads the token from the header and answers 401 when it is missing or not valid. Follows the template. |
 | Settings | `backend/app/config.py` | Reads the settings from environment variables whose names begin with POC_: the path of the database file, the secret key that signs the tokens, how long a token lives, the model key, the model name, the provider type and address, the folder of the session files, the system prompt, and the longest wait for the next part of an answer. The application makes the settings once and shares them. |
-| Database | `backend/app/database.py` | Opens a connection to the SQLite file, with foreign keys switched on, and creates the two tables. The SQL is written by hand. |
+| Database | `backend/app/database.py` | Opens a connection to the SQLite file, with foreign keys switched on, and creates the two tables. The SQL is written by hand. A database file made before task 5 lacks the column of the last activity and must be deleted by hand. |
 | Users | `backend/app/users.py` | Stores a new user with the hash of the password. Refuses an empty name, an empty password and a name that exists. Checks a user name and a password for sign-in. Finds a user by id. |
 | Passwords and tokens | `backend/app/security.py` | Turns a password into a one-way hash with Argon2, and checks a password against a hash. Makes a token signed with HS256 and reads it back. Follows the official FastAPI full-stack template; see `docs/sources.md`. |
 | Agent module | `backend/app/agent.py` | The only file that imports the Copilot SDK. Starts and stops the SDK's runtime inside the backend's process, in the mode "empty", with the session files in the folder from the settings. Gives the rest of the backend three actions: start a conversation, send a message and get the answer in pieces, and read the history. Lets one message at a time into a conversation. Stops the model when the reader of an answer goes away. Refuses an id it did not make. No type of the SDK leaves the module. |

@@ -4,12 +4,26 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from anyio.from_thread import BlockingPortal
 from fastapi.testclient import TestClient
+from model_stand_in import ModelStandIn, running_stand_in
 
 from app.config import get_settings
 from app.database import connect, create_tables
 from app.main import app
 from app.users import create_user
+
+# Variables that send traffic through a proxy. The runtime honours them, so
+# they are removed: the tests must reach the stand-in directly, whatever the
+# machine that runs them has set.
+PROXY_VARIABLES = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -98,3 +112,34 @@ def sign_in(client: TestClient) -> Callable[[SavedUser], str]:
         return token
 
     return get_token
+
+
+@pytest.fixture
+def stand_in() -> Iterator[ModelStandIn]:
+    with running_stand_in() as server:
+        yield server
+
+
+@pytest.fixture
+def stand_in_address(monkeypatch: pytest.MonkeyPatch, stand_in: ModelStandIn) -> None:
+    # Points the settings at the stand-in, with no key yet.
+    for name in PROXY_VARIABLES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    monkeypatch.setenv("no_proxy", "127.0.0.1")
+    monkeypatch.setenv("POC_MODEL_PROVIDER_ADDRESS", stand_in.address)
+
+
+@pytest.fixture
+def model_key(monkeypatch: pytest.MonkeyPatch, stand_in_address: None) -> str:
+    # Adds a key made at run time to the settings that point at the stand-in.
+    key = secrets.token_urlsafe(24)
+    monkeypatch.setenv("POC_MODEL_API_KEY", key)
+    return key
+
+
+def portal_of(client: TestClient) -> BlockingPortal:
+    # The test client runs the application on an event loop of its own. The
+    # portal lets a test call the agent's async methods on that loop.
+    assert client.portal is not None
+    return client.portal

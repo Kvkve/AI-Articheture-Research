@@ -1,11 +1,16 @@
 import sqlite3
 from pathlib import Path
 
-# conversations.id is text, not a number, because a later task uses the same
-# value as the session id of the agent SDK.
+# conversations.id is text, not a number, because it is the same value as the
+# session id that the agent module makes.
 # conversations.title stays empty until the first message of the
 # conversation; a later task fills it.
-# The created_at times are in UTC.
+# Every time is in UTC. The two times of a conversation also keep
+# milliseconds, because the list of conversations is ordered by
+# last_active_at, and whole seconds would often be equal.
+# conversations.last_active_at is the time of the last activity. A new
+# conversation has the same value in both of its times, because SQLite gives
+# 'now' one value for the whole of one statement.
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY,
@@ -15,10 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
-    id         TEXT PRIMARY KEY,
-    user_id    INTEGER NOT NULL REFERENCES users(id),
-    title      TEXT,
-    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    id             TEXT PRIMARY KEY,
+    user_id        INTEGER NOT NULL REFERENCES users(id),
+    title          TEXT,
+    created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    last_active_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 """
 

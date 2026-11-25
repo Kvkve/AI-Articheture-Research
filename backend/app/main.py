@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app import login, protected
 from app.agent import Agent
+from app.agent_errors import add_agent_error_handlers
 from app.config import get_settings
 from app.database import connect, create_tables
 
@@ -32,6 +33,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="AI Agent Platform", lifespan=lifespan)
+# An error of the agent module that an endpoint lets rise becomes an answer
+# with a status code here.
+add_agent_error_handlers(app)
 
 # Open endpoints: /health and the sign-in endpoint. FastAPI also adds the
 # pages of the generated API documentation, which are open too.

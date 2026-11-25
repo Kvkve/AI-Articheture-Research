@@ -35,6 +35,7 @@ def test_first_start_makes_the_file_and_the_tables(database_file: Path) -> None:
         "user_id",
         "title",
         "created_at",
+        "last_active_at",
     ]
     connection.close()
 
