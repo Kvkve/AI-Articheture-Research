@@ -25,6 +25,7 @@ import pytest
 from conftest import SavedUser
 from model_stand_in import ModelStandIn
 from playwright.sync_api import Browser, Page, expect, sync_playwright
+from playwright.sync_api import Error as PlaywrightError
 
 pytestmark = pytest.mark.browser
 
@@ -197,12 +198,19 @@ def page(browser: Browser, frontend_address: str) -> Iterator[Page]:
         new_page.goto(frontend_address)
         yield new_page
     finally:
-        # pytest shows this only when the test fails.
-        print(f"===== The page at the end: {new_page.url} =====")
-        print(new_page.locator("body").inner_text())
-        print("===== The console of the page =====")
-        print("\n".join(console))
-        new_page.close()
+        try:
+            # pytest shows this only when the test fails.
+            print(f"===== The page at the end: {new_page.url} =====")
+            try:
+                print(new_page.locator("body").inner_text())
+            except PlaywrightError as error:
+                # For example a page that has crashed. A new error here would
+                # hide the failure of the test, so it is only printed.
+                print(f"The text of the page could not be read: {error}")
+            print("===== The console of the page =====")
+            print("\n".join(console))
+        finally:
+            new_page.close()
 
 
 def sign_in(page: Page, user: SavedUser) -> None:

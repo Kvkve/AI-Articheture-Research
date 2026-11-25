@@ -88,29 +88,29 @@ export async function signIn(username: string, password: string): Promise<string
   if (!response.ok) {
     throw await errorFromResponse(response)
   }
-  const token: { access_token: string } = await response.json()
+  const token = await readSuccessBody<{ access_token: string }>(response)
   return token.access_token
 }
 
 export async function getCurrentUser(token: string): Promise<User> {
   const response = await sendWithToken(token, '/users/me', { method: 'GET' })
-  return response.json()
+  return readSuccessBody<User>(response)
 }
 
 export async function listConversations(token: string): Promise<Conversation[]> {
   const response = await sendWithToken(token, '/conversations', { method: 'GET' })
-  const list: { conversations: Conversation[] } = await response.json()
+  const list = await readSuccessBody<{ conversations: Conversation[] }>(response)
   return list.conversations
 }
 
 export async function startConversation(token: string): Promise<Conversation> {
   const response = await sendWithToken(token, '/conversations', { method: 'POST' })
-  return response.json()
+  return readSuccessBody<Conversation>(response)
 }
 
 export async function readHistory(token: string, conversationId: string): Promise<Message[]> {
   const response = await sendWithToken(token, messagesPath(conversationId), { method: 'GET' })
-  const list: { messages: Message[] } = await response.json()
+  const list = await readSuccessBody<{ messages: Message[] }>(response)
   return list.messages
 }
 
@@ -196,6 +196,18 @@ async function send(path: string, init: RequestInit): Promise<Response> {
       throw error
     }
     throw new UnreachableError()
+  }
+}
+
+// Reads the JSON body of a success answer. A body that is not JSON, or a
+// connection that breaks while the body arrives, becomes an error of this
+// module with a text for the user, not a raw error of the browser.
+async function readSuccessBody<T>(response: Response): Promise<T> {
+  try {
+    const body: T = await response.json()
+    return body
+  } catch {
+    throw new BackendError(response.status, GENERAL_ERROR_TEXT)
   }
 }
 

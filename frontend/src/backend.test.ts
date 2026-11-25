@@ -171,4 +171,40 @@ describe('backend', () => {
       AnswerStoppedError,
     )
   })
+
+  it('turns a success answer whose body is not JSON into an error with the general text', async () => {
+    fakeFetch.mockResolvedValue(
+      new Response('not json', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    )
+
+    const error = await listConversations('t').catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(BackendError)
+    expect((error as BackendError).message).toBe('Something went wrong on the server. Try again later.')
+  })
+
+  it('ends the stream as cut off when reading fails and the user did not stop', async () => {
+    // A body that sends one piece, then breaks as a lost connection does.
+    let sentPiece = false
+    const body = new ReadableStream<Uint8Array>({
+      pull(streamController) {
+        if (sentPiece) {
+          streamController.error(new TypeError('network error'))
+          return
+        }
+        sentPiece = true
+        streamController.enqueue(new TextEncoder().encode('data: {"type":"text","text":"Hi"}\n\n'))
+      },
+    })
+    fakeFetch.mockResolvedValue(new Response(body, { status: 200 }))
+
+    const stream = await sendMessage('t', 'c1', 'Hello', new AbortController().signal)
+    const messages: StreamMessage[] = []
+    for await (const message of stream) {
+      messages.push(message)
+    }
+
+    // The loop ends with no "end" and no "error", and with no error thrown.
+    expect(messages).toEqual([{ type: 'text', text: 'Hi' }])
+  })
 })

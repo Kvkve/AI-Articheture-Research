@@ -77,6 +77,10 @@ function ChatView({ token, conversationId, onStreamStarted, onSignOut }: ChatVie
           if (!isCurrent()) {
             return
           }
+          // Only the history says what was stored. Without it, a message
+          // that was sent and the part of its answer must not stay on the
+          // page as if they were stored.
+          setPending(null)
           if (error instanceof SignInAgainError) {
             onSignOut()
           } else if (error instanceof BackendError && error.status === 404) {

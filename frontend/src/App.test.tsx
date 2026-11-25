@@ -327,4 +327,117 @@ describe('App', () => {
     expect(fakeFetch.mock.calls.some(([, init]) => init.method === 'POST')).toBe(false)
     expect((box as HTMLTextAreaElement).value).toBe('ni hao')
   })
+
+  // A body that sends one piece and stays open until the page closes the
+  // connection; it then fails as a fetch body does. closed() tells whether
+  // the page closed it.
+  function heldAnswer(init: RequestInit): { response: Response; closed: () => boolean } {
+    let closedByPage = false
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('data: {"type":"text","text":"Part"}\n\n'))
+        init.signal?.addEventListener('abort', () => {
+          closedByPage = true
+          controller.error(new DOMException('The operation was aborted.', 'AbortError'))
+        })
+      },
+    })
+    return { response: new Response(body, { status: 200 }), closed: () => closedByPage }
+  }
+
+  it('takes the sent message and the partial answer off the page when the history cannot be read again', async () => {
+    signedInAsAlice([NO_TITLE])
+    window.location.hash = '#/conversations/c1'
+    let historyReads = 0
+    routes['GET /api/conversations/c1/messages'] = () => {
+      historyReads += 1
+      if (historyReads === 1) {
+        return jsonAnswer(200, { messages: [] })
+      }
+      return jsonAnswer(409, { detail: 'The conversation is still busy. Try again later.' })
+    }
+    routes['POST /api/conversations/c1/messages'] = (init) => heldAnswer(init).response
+    const user = userEvent.setup()
+    render(<App />)
+    const box = await screen.findByRole('textbox', { name: 'Message' })
+    await screen.findByRole('button', { name: 'Send' })
+    await user.type(box, 'Hi{Enter}')
+    await screen.findByRole('article', { name: 'Answer' })
+
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'The conversation is still busy. Try again later.',
+    )
+    expect(historyReads).toBe(2)
+    expect(screen.queryByRole('article', { name: 'Your message' })).toBeNull()
+    expect(screen.queryByRole('article', { name: 'Answer' })).toBeNull()
+  })
+
+  it('closes the connection of an answer when another conversation is opened', async () => {
+    signedInAsAlice([NO_TITLE, { ...NO_TITLE, id: 'c2' }])
+    window.location.hash = '#/conversations/c1'
+    routes['GET /api/conversations/c1/messages'] = () => jsonAnswer(200, { messages: [] })
+    routes['GET /api/conversations/c2/messages'] = () =>
+      jsonAnswer(200, { messages: [{ role: 'user', text: 'In the other one' }] })
+    let answer: { closed: () => boolean } | undefined
+    routes['POST /api/conversations/c1/messages'] = (init) => {
+      const held = heldAnswer(init)
+      answer = held
+      return held.response
+    }
+    const user = userEvent.setup()
+    render(<App />)
+    const box = await screen.findByRole('textbox', { name: 'Message' })
+    await screen.findByRole('button', { name: 'Send' })
+    await user.type(box, 'Hi{Enter}')
+    await screen.findByRole('article', { name: 'Answer' })
+
+    window.location.hash = '#/conversations/c2'
+
+    expect(await screen.findByText('In the other one')).toBeDefined()
+    expect(screen.queryByText('Hi')).toBeNull()
+    expect(answer?.closed()).toBe(true)
+  })
+
+  it('closes the connection of an answer on sign-out', async () => {
+    signedInAsAlice([NO_TITLE])
+    window.location.hash = '#/conversations/c1'
+    routes['GET /api/conversations/c1/messages'] = () => jsonAnswer(200, { messages: [] })
+    let answer: { closed: () => boolean } | undefined
+    routes['POST /api/conversations/c1/messages'] = (init) => {
+      const held = heldAnswer(init)
+      answer = held
+      return held.response
+    }
+    const user = userEvent.setup()
+    render(<App />)
+    const box = await screen.findByRole('textbox', { name: 'Message' })
+    await screen.findByRole('button', { name: 'Send' })
+    await user.type(box, 'Hi{Enter}')
+    await screen.findByRole('article', { name: 'Answer' })
+
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeDefined()
+    expect(answer?.closed()).toBe(true)
+  })
+
+  it('shows the error of the reader when the stream breaks its format', async () => {
+    signedInAsAlice([NO_TITLE])
+    window.location.hash = '#/conversations/c1'
+    routes['GET /api/conversations/c1/messages'] = () => jsonAnswer(200, { messages: [] })
+    routes['POST /api/conversations/c1/messages'] = () =>
+      new Response('data: {"type":"text","text":"Part"}\n\ndata: not json\n\n', { status: 200 })
+    const user = userEvent.setup()
+    render(<App />)
+    const box = await screen.findByRole('textbox', { name: 'Message' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await user.type(box, 'Hi{Enter}')
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'The answer arrived in a form that the page cannot read.',
+    )
+  })
 })
