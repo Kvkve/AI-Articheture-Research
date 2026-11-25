@@ -1,0 +1,198 @@
+/* The styles of the whole page, written by hand. A plain look is enough for
+   the first PoC, and a layout for phones is not part of it. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1f2328;
+  background: #ffffff;
+}
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #8c959f;
+  border-radius: 6px;
+  background: #f6f8fa;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+input,
+textarea {
+  font: inherit;
+  padding: 0.4rem;
+  border: 1px solid #8c959f;
+  border-radius: 6px;
+}
+
+textarea:read-only {
+  background: #f6f8fa;
+}
+
+.error-line {
+  margin: 0.5rem 0;
+  color: #b42318;
+}
+
+.notice-line {
+  margin: 0.5rem 0;
+  color: #57606a;
+}
+
+/* The sign-in page, and the short texts shown while the page loads. */
+
+.centered {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.sign-in {
+  display: flex;
+  width: 20rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sign-in label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* The main view: a bar at the top, the list on the left, the chat on the
+   right. */
+
+.main-view {
+  display: grid;
+  height: 100%;
+  grid-template-columns: 16rem 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.top-bar {
+  display: flex;
+  grid-column: 1 / 3;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.app-name {
+  font-weight: 600;
+}
+
+.signed-in-as {
+  margin-left: auto;
+}
+
+.conversation-list {
+  overflow-y: auto;
+  padding: 0.75rem;
+  border-right: 1px solid #d0d7de;
+}
+
+.conversation-list ul {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversation-list a {
+  display: block;
+  overflow: hidden;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-list a:hover {
+  background: #f6f8fa;
+}
+
+.conversation-list a[aria-current='page'] {
+  background: #ddf4ff;
+  font-weight: 600;
+}
+
+/* The chat. Only the messages scroll; the box for a message stays at the
+   bottom. min-height: 0 lets the grid cell shrink, so the scrolling works. */
+
+.chat {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 0 1rem 1rem;
+}
+
+.chat-empty {
+  justify-content: center;
+  color: #57606a;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 1rem;
+}
+
+.chat-note {
+  color: #57606a;
+}
+
+.message {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+
+.message-user {
+  background: #f6f8fa;
+}
+
+/* Keeps the line breaks of what the user wrote. */
+.user-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.message-assistant pre {
+  overflow-x: auto;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: #f6f8fa;
+}
+
+.message-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.message-form textarea {
+  flex: 1;
+  resize: vertical;
+}
