@@ -1,17 +1,24 @@
+import asyncio
 import secrets
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pytest
 from anyio.from_thread import BlockingPortal
 from fastapi.testclient import TestClient
 from model_stand_in import ModelStandIn, running_stand_in
 
+from app.agent import Agent
 from app.config import get_settings
 from app.database import connect, create_tables
 from app.main import app
 from app.users import create_user
+
+# How long a test waits for the stand-in or the agent to see something. Only
+# reached when a test fails, so it does not slow a good run.
+STAND_IN_WAIT_SECONDS = 10.0
 
 # Variables that send traffic through a proxy. The runtime honours them, so
 # they are removed: the tests must reach the stand-in directly, whatever the
@@ -61,6 +68,8 @@ def fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         "POC_MODEL_PROVIDER_ADDRESS",
         "POC_SYSTEM_PROMPT",
         "POC_ANSWER_WAIT_SECONDS",
+        "POC_LONGEST_MESSAGE_CHARACTERS",
+        "POC_TITLE_CHARACTERS",
     ):
         monkeypatch.delenv(name, raising=False)
     get_settings.cache_clear()
@@ -143,3 +152,35 @@ def portal_of(client: TestClient) -> BlockingPortal:
     # portal lets a test call the agent's async methods on that loop.
     assert client.portal is not None
     return client.portal
+
+
+def bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def start_conversation(client: TestClient, token: str) -> dict[str, Any]:
+    response = client.post("/conversations", headers=bearer(token))
+    assert response.status_code == 201, response.text
+    conversation: dict[str, Any] = response.json()
+    return conversation
+
+
+def run_sql(database_file: Path, sql: str, parameters: tuple[Any, ...] = ()) -> None:
+    connection = connect(database_file)
+    with connection:
+        connection.execute(sql, parameters)
+    connection.close()
+
+
+def the_agent() -> Agent:
+    # The one agent object that the start-up of the application made.
+    agent: Agent = app.state.agent
+    return agent
+
+
+async def wait_until_free(agent: Agent, conversation_id: str) -> None:
+    # Reads the agent's private table of busy conversations, because nothing
+    # public waits without also opening a session.
+    in_use = agent._in_use.get(conversation_id)
+    if in_use is not None:
+        await asyncio.wait_for(in_use.freed.wait(), STAND_IN_WAIT_SECONDS)

@@ -11,52 +11,33 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import SavedUser, portal_of
+from conftest import (
+    SavedUser,
+    bearer,
+    portal_of,
+    run_sql,
+    start_conversation,
+    the_agent,
+)
 from fastapi.testclient import TestClient
 from model_stand_in import ModelStandIn
 
 from app.agent import (
-    Agent,
     AgentError,
     ConversationBusyError,
     HistoryMessage,
 )
 from app.agent_errors import BUSY_TEXT
 from app.database import connect
-from app.main import app
 
 # The form of the ids that the agent module makes.
 CONVERSATION_ID_FORM = re.compile(r"[0-9a-f]{32}")
-
-
-def bearer(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}
-
-
-def start_conversation(client: TestClient, token: str) -> dict[str, Any]:
-    response = client.post("/conversations", headers=bearer(token))
-    assert response.status_code == 201, response.text
-    conversation: dict[str, Any] = response.json()
-    return conversation
 
 
 def list_ids(client: TestClient, token: str) -> list[str]:
     response = client.get("/conversations", headers=bearer(token))
     assert response.status_code == 200, response.text
     return [entry["id"] for entry in response.json()["conversations"]]
-
-
-def run_sql(database_file: Path, sql: str, parameters: tuple[Any, ...] = ()) -> None:
-    connection = connect(database_file)
-    with connection:
-        connection.execute(sql, parameters)
-    connection.close()
-
-
-def the_agent() -> Agent:
-    # The one agent object that the start-up of the application made.
-    agent: Agent = app.state.agent
-    return agent
 
 
 class RecordedCalls:
