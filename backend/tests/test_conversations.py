@@ -143,7 +143,7 @@ def test_the_list_gives_the_title_and_null_for_no_title(
     token = sign_in(add_user("alice"))
     with_title = start_conversation(client, token)["id"]
     without_title = start_conversation(client, token)["id"]
-    # No endpoint writes a title yet, so the test writes one into the table.
+    # The test writes the title into the table, so that it needs no model.
     run_sql(
         database_file,
         "UPDATE conversations SET title = ? WHERE id = ?",
@@ -209,8 +209,8 @@ def test_the_history_gives_the_messages_in_order(
     stand_in.answer("Green", ".")
 
     async def send(text: str) -> list[str]:
-        # No endpoint sends a message yet, so the test sends through the agent
-        # object of the application.
+        # The test sends through the agent object of the application, so that
+        # it tests the history endpoint alone.
         answer = await the_agent().begin_answer(conversation_id, text)
         return [piece async for piece in answer]
 

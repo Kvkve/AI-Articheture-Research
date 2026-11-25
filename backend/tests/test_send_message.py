@@ -592,6 +592,8 @@ def test_a_message_that_is_too_long_is_not_repeated_and_the_limit_is_named(
     [entry] = response.json()["detail"]
     assert entry["loc"] == ["body", "text"]
     assert str(SMALL_LONGEST_MESSAGE_CHARACTERS) in entry["msg"]
+    # The limit as a number, for a frontend that does not read the sentence.
+    assert entry["ctx"] == {"max_length": SMALL_LONGEST_MESSAGE_CHARACTERS}
 
 
 @pytest.mark.usefixtures("small_limits", "model_key")
@@ -619,10 +621,17 @@ def test_the_limit_counts_characters_not_bytes(
     assert messages == [text("Fine."), END]
 
 
+@pytest.mark.usefixtures("small_limits")
+@pytest.mark.parametrize(
+    "bad_text",
+    ["   ", "x" * (SMALL_LONGEST_MESSAGE_CHARACTERS + 1)],
+    ids=["white space", "too long"],
+)
 def test_a_body_that_is_not_valid_gets_422_whatever_the_conversation(
     client: TestClient,
     add_user: Callable[[str], SavedUser],
     sign_in: Callable[[SavedUser], str],
+    bad_text: str,
 ) -> None:
     alice_token = sign_in(add_user("alice"))
     bob_token = sign_in(add_user("bob"))
@@ -638,7 +647,7 @@ def test_a_body_that_is_not_valid_gets_422_whatever_the_conversation(
     ):
         response = client.post(
             messages_address(conversation_id),
-            json={"text": "   "},
+            json={"text": bad_text},
             headers=bearer(alice_token),
         )
         answers.append((response.status_code, response.json()))

@@ -1,4 +1,4 @@
-# The one place that decides what a browser is told about an error of the
+# The one place that holds what a browser is told about an error of the
 # agent module. The endpoints let these errors rise, and the handlers below
 # answer them. The answer has the same JSON shape as every other error,
 # {"detail": "..."}, with a fixed text. The text of the error itself goes to
@@ -6,8 +6,9 @@
 # browser must not see.
 #
 # An error that comes while an answer streams cannot change the status code
-# any more, which has gone out with the start of the stream. The stream then
-# ends with an error message that holds ANSWER_FAILED_TEXT.
+# any more, which has gone out with the start of the stream. The endpoint in
+# backend/app/protected.py then ends the stream with an error message that
+# holds ANSWER_FAILED_TEXT.
 import logging
 
 from fastapi import FastAPI, Request, status

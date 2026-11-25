@@ -192,7 +192,8 @@ class NewMessage(BaseModel):
         description=(
             "The text of the message, as the user wrote it. It must not be "
             "empty or hold only white space, and it must not be longer than "
-            "the backend's setting for the longest message. The first message "
+            "the backend's setting for the longest message. The length is "
+            "counted in characters, as Unicode code points. The first message "
             "of a conversation also gives the conversation its title."
         )
     )
@@ -266,6 +267,13 @@ sends one when the stream has been quiet for a while. A reader skips it.
 
 A reader that closes the connection before the end stops the answer: the
 model is stopped and the conversation is freed for a new message.
+
+After a stream that was cut off, read the history of the conversation to see
+what was stored, before sending the message again.
+
+The EventSource of a browser cannot make this request, because it cannot send
+a POST, a body or a token. A frontend reads the stream with fetch, or with
+any other client that gives the answer as it arrives.
 """
 
 
@@ -278,13 +286,22 @@ def json_error_answer(model: type[BaseModel], description: str) -> dict[str, Any
     }
 
 
-def refuse_text(error_type: str, message: str) -> RequestValidationError:
+def refuse_text(
+    error_type: str, message: str, context: dict[str, int] | None = None
+) -> RequestValidationError:
     # The same shape as the 422 that FastAPI gives for a body that fails
     # validation, so that a frontend has one rule for every 422. There is no
     # "input" field: the answer must not repeat a text that is too long.
-    return RequestValidationError(
-        [{"type": error_type, "loc": ("body", "text"), "msg": message}]
-    )
+    entry: dict[str, Any] = {
+        "type": error_type,
+        "loc": ("body", "text"),
+        "msg": message,
+    }
+    if context is not None:
+        # "ctx" is where FastAPI's own entries carry numbers such as a limit,
+        # so a frontend can read the limit without reading the sentence.
+        entry["ctx"] = context
+    return RequestValidationError([entry])
 
 
 async def begin_sending(
@@ -306,7 +323,9 @@ async def begin_sending(
     longest = settings.longest_message_characters
     if len(message.text) > longest:
         raise refuse_text(
-            "string_too_long", f"The message is longer than {longest} characters."
+            "string_too_long",
+            f"The message is longer than {longest} characters.",
+            {"max_length": longest},
         )
     if find_conversation(connection, conversation_id, user.id) is None:
         raise HTTPException(
@@ -359,8 +378,8 @@ async def begin_sending(
         status.HTTP_500_INTERNAL_SERVER_ERROR: json_error_answer(
             ErrorMessage,
             "The agent module failed before the stream started. The body holds "
-            "a general text. A failure of the database in this step gives a "
-            "plain-text answer instead.",
+            "a general text. A failure of the database before the stream "
+            "starts gives a plain-text answer instead, not JSON.",
         ),
         status.HTTP_503_SERVICE_UNAVAILABLE: json_error_answer(
             ErrorMessage,
@@ -378,7 +397,8 @@ async def begin_sending(
                     "setting for the longest message. Each entry of the list "
                     'under "detail" names the field in "loc" and the problem '
                     'in "msg". The answer for a text that is too long does '
-                    "not repeat the text."
+                    "not repeat the text, and gives the limit as the number "
+                    '"max_length" under "ctx".'
                 )
             }
         }
