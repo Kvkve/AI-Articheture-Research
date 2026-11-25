@@ -313,7 +313,7 @@ The tasks:
     - One test expects the time of the last activity to be later than the time the conversation was made. It relies on one millisecond passing between the two requests. The calls to the SDK in between take longer than that.
     - `./scripts/check.sh` now takes about 135 seconds. Each of the 25 new tests starts the application.
   - The diagram was drawn in the session and looked right.
-- [~] 7. Frontend. A sign-in page. A list of the user's conversations with a button for a new one. A chat view that shows the history, sends a message, shows the answer as it arrives, shows its formatting with `react-markdown`, shows that the model is working while nothing has arrived, shows errors, and has a stop button. The code that talks to the backend is one module.
+- [x] 7. Frontend. A sign-in page. A list of the user's conversations with a button for a new one. A chat view that shows the history, sends a message, shows the answer as it arrives, shows its formatting with `react-markdown`, shows that the model is working while nothing has arrived, shows errors, and has a stop button. The code that talks to the backend is one module.
   - Accepted when: unit tests cover the module that reads the stream; one browser test runs the whole path against the backend with the stand-in. In that test user A signs in, starts a conversation, sends a message and sees the answer arrive in pieces. After a reload the history is shown. Then user B signs in and does not see A's conversation.
   - From the owner's choice in task 2: the list shows the title of each conversation, and "New conversation" for one that has no title yet.
   - From the owner's choice in task 5: the list is ordered by the last activity. After a message is sent, its conversation moves to the top.
@@ -374,6 +374,31 @@ The tasks:
     - For the browser test: `playwright` 1.63.0 (Apache-2.0). It brings in `pyee` (MIT) and `greenlet` (MIT and PSF-2.0).
     - ISC and PSF-2.0 are not named in the license list of `AGENTS.md`. These are installed packages and not copied code, so the main agent reads the list as in tasks 2 and 4. The owner was told on 2026-11-25. `pytest-playwright` was not added: through `python-slugify` it brings in `text-unidecode`, which is under the Artistic License or the GPL, by the metadata of the package read on 2026-11-25.
   - One existing test changed, as the brief allowed: `frontend/src/App.test.tsx` checked the heading of the placeholder page, and now holds the tests of the new page. No other existing test changed. Two settings of the checks changed: the new rule of ESLint, and the marker with the line that leaves the browser test out of the plain pytest.
+  - Two review rounds. Neither found anything that must be fixed in the code.
+    - The first round named one point for the owner: the license of `greenlet`, which is above. It gave suggestions. Five were taken, by `implementer` in one round of fixes:
+      - When the history cannot be read again, the message that was sent and the part of its answer are taken off the page. Before, they stayed on it as if they were stored.
+      - A success answer whose body cannot be read becomes an error of the module that talks to the backend. Before, the chat could show a raw error text of the browser.
+      - New tests for three things that no test guarded: leaving a conversation, or signing out, while an answer arrives closes the connection; a stream that breaks its format shows the text of the reader, not "connection lost"; a read that breaks with no stop ends as a stream that was cut.
+      - The fixture that shows the page of a failed browser test always closes the page, and a page that cannot be read no longer hides the failure of the test.
+      - The diagram of `docs/architecture.md` got the arrow from the application to the address module.
+    - Not taken. They are under "Known limits": two reads of the list whose answers come in the wrong order, and a double click on "New conversation"; "Stop" pressed after the "end" message; an image in an answer; "Stop" pressed while a refusal arrives; a line that ends with a carriage return alone.
+    - The second round found all five closed and nothing new. It broke each fix in a scratch copy, and the new test failed each time. `implementer` had reported the same, and the main agent tried one of them.
+  - Known limits. They are accepted for the first PoC and are not fixed:
+    - The way the page reaches the backend is for development only. A deployment needs another part that passes the calls on. The browser test runs the development server too, not a built page.
+    - Any script on the page can read the token in the storage of the tab.
+    - A stopped or failed answer leaves the page, because the history holds no part of it. This is the finding of task 4.
+    - When the history cannot be read again after a stop, an error or a cut, the user must reload the page. The same holds when the backend cannot be reached at the load of the page.
+    - Two quick clicks on "New conversation" make two conversations. When two reads of the list overlap, the answer that comes last wins, also when it is the older one. The next read sets it right.
+    - "Stop" pressed after the "end" message and before the stream has closed shows "The answer was stopped." over an answer that was stored in full.
+    - "Stop" pressed after the status of a refusal has arrived and before its body is read shows a general text, not the text of the backend.
+    - The reader of the stream does not take a line that ends with a carriage return alone. The backend never sends one.
+    - A table in an answer shows as plain text with bars, because the page has no add-on for tables.
+    - An image in an answer loads from any address. An answer that is steered by text from outside could send conversation text out in the address of an image. The first PoC has no tools and no knowledge sources, so only the user's own text reaches the model. Look at this before either is added. `reviewer` pointed this out.
+    - The types of the answers in `frontend/src/backend.ts` are written by hand from the models of the backend. Only the browser test shows that they match, and only for the path it takes.
+    - The browser test asks the system for a free port and gives it to a server. Another program could take the port in between, and the test would then fail with the log of the server.
+    - The pin of Playwright follows the browser that a cloud session has installed. When the image of the session moves to another version, the browser test fails in a cloud session until the pin is changed. On GitHub every pinned version works, because the browser is downloaded there.
+    - `./scripts/check.sh` now takes about 150 seconds.
+  - The diagram was not drawn in the session. Its text was checked with a small script: every box that an arrow names is defined, every box is on an arrow, every group is closed, and every file in a box is in the table. The picture that GitHub draws is the one that counts.
 - [ ] 8. Trial with the real model. One run in the browser with the model from configuration, in a session on the project environment. The trial note records which request settings the runtime chooses for this model, the timing and the token counts. The task also finds out whether the application can change the thinking, effort and output limit settings.
   - Accepted when: a chat turn works from the browser to the real model and back; the findings are in the trial note; the key is in no file and no output.
 - [ ] 9. Show the model's reasoning. A fourth kind of message carries pieces of the reasoning summary. The chat view shows them in a block that the user can open and close. The history shows the stored summary too. This task is dropped if it proves troublesome.
@@ -391,5 +416,7 @@ Tools, knowledge sources and the response cache. Single sign-on. Deployment, and
 Response cache, knowledge sources, connections to databases and other APIs, deployment. Not scheduled yet.
 
 Before a build for hundreds of users, look again at three choices of the first PoC (the owner asked about this on 2026-11-23). Where the runtime runs: inside the backend's process, a crash stops every conversation. Where the conversation history lives: with several backend machines, session files on one machine's disk cannot be read by the others. The database: SQLite fits one machine only, so a database server is needed. The choices of the Copilot SDK and of Server-Sent Events are expected to carry over. Also decide then where requests are processed: the provider's default lets a request be processed in any region, and a setting keeps it in the United States at 1.1 times the price. Whether that setting can be passed through the Copilot SDK is not checked.
+
+Before tools or knowledge sources are added, decide where an image in an answer may load from (found in task 7). Text from outside can then reach the model, and an answer could send conversation text out in the address of an image.
 
 Each team may later have its own frontend (the owner's hope, 2026-11-23). Two ways to get there, not chosen yet: one shared frontend with settings for each team, or separate frontends that each team builds on the shared backend API, perhaps with shared components.
