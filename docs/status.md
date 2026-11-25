@@ -250,7 +250,7 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
 - `./scripts/check.sh` takes about 150 seconds and grows with every test that starts the backend. The package `pytest-xdist` (MIT) would run the tests side by side. It was not added. The owner was told on 2026-11-24 and has not asked for it.
 - The license of the runtime: the release package holds no license file. That the license of the repository `github/copilot-cli` covers the package is the main agent's inference.
 - One package that the SDK brings in, `certifi`, is under MPL-2.0, which the license list of `AGENTS.md` does not name. It is installed and not copied. The owner was told on 2026-11-24.
-- Task 7 brought in two more licenses that the list does not name, with installed packages: ISC (`@ungap/structured-clone`, under `react-markdown`) and PSF-2.0 (`greenlet`, under `playwright`, which is MIT and PSF-2.0). The owner was told on 2026-11-25.
+- Task 7 brought in two more licenses that the list does not name, with installed packages: ISC (`@ungap/structured-clone`, under `react-markdown`) and PSF-2.0 (`greenlet`, under `playwright`, which is MIT and PSF-2.0). The owner accepted both on 2026-11-25.
 - The runtime looks at the git repository in the working directory of the backend and stores that directory in the session files. Whether a working directory for each session stops this was not tried.
 - Using a Copilot subscription in place of a model key is a documented sign-in method of the SDK. It is not tested, because it needs a subscription.
 - The SDK keeps the conversation content as plain files on disk. Whether these files can be encrypted was not found.
@@ -286,4 +286,3 @@ The trial scripts for the SDK are printed at the end of `docs/research/research_
   - A table in an answer shows as plain text. An image in an answer loads from any address: look at this before tools or knowledge sources are added.
   - The types of the answers in `frontend/src/backend.ts` are written by hand. Only the browser test shows that they match the backend, and only for the path it takes.
   - The browser test runs the development server, not a built page.
-- `AGENTS.md` describes the steps of `./scripts/check.sh` and of `./scripts/setup.sh` without the browser test and its browser. The main agent asked the owner on 2026-11-25 to approve two added half sentences.
