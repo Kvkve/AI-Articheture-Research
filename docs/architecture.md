@@ -10,7 +10,7 @@ Rules for this file:
 - Backticks are used only for paths and for addresses of the API that begin with `/`.
 - An automatic check, `scripts/check_architecture.py`, verifies that each path in backticks exists.
 
-Shows the state after part 1 of task 7 of the first PoC: the skeleton, the automatic checks, the database with its users and conversations, sign-in, the module that talks to the model through the Copilot SDK, the endpoints that start a conversation, list the user's conversations and read the history of one, the endpoint that sends a message and streams the answer, and the web interface that uses them through the development server of the frontend.
+Shows the state after task 7 of the first PoC: the skeleton, the automatic checks, the database with its users and conversations, sign-in, the module that talks to the model through the Copilot SDK, the endpoints that start a conversation, list the user's conversations and read the history of one, the endpoint that sends a message and streams the answer, the web interface that uses them through the development server of the frontend, and the browser test that runs the whole product.
 
 ## The whole picture
 
@@ -116,19 +116,21 @@ flowchart TB
         CHECK["scripts/check.sh<br/>the one command that runs every check"]
         MAP["Step 1: the document map<br/>scripts/check_document_map.py<br/>every path in the map of AGENTS.md exists"]
         ARCH["Step 2: this file<br/>scripts/check_architecture.py<br/>every path in backticks in docs/architecture.md exists"]
-        PY["Step 3: Python code in backend/ and scripts/<br/>ruff, mypy, pytest<br/>rules: backend/pyproject.toml,<br/>with the rule that only app/agent.py imports the SDK<br/>tests: backend/tests/ and scripts/tests/"]
+        PY["Step 3: Python code in backend/ and scripts/<br/>ruff, mypy, pytest<br/>rules: backend/pyproject.toml,<br/>with the rule that only app/agent.py imports the SDK<br/>tests: backend/tests/ and scripts/tests/,<br/>but not the browser test"]
         STANDIN["backend/tests/model_stand_in.py<br/>a local server that stands in for<br/>the model provider in the tests"]
         TS["Step 4: code in frontend/<br/>ESLint, TypeScript compiler, Vitest<br/>rules: frontend/eslint.config.js<br/>tests: frontend/src/App.test.tsx,<br/>frontend/src/backend.test.ts,<br/>frontend/src/answerStream.test.ts;<br/>with the rule that only src/backend.ts calls fetch"]
+        BT["Step 5: the browser test of the whole product<br/>backend/tests/test_browser.py<br/>starts the backend under uvicorn and<br/>the development server of the frontend,<br/>and drives the page in a Chromium browser<br/>with Playwright"]
         P --> CHECK
         HOOK --> CHECK
         GH --> CHECK
-        CHECK --> MAP --> ARCH --> PY --> TS
+        CHECK --> MAP --> ARCH --> PY --> TS --> BT
+        BT -->|"the backend it starts<br/>points the runtime at it"| STANDIN
         PY -->|"the tests of app/agent.py and of<br/>the conversation endpoints<br/>point the runtime at it"| STANDIN
     end
 
     subgraph DEP["Installing dependencies"]
         WHO["A person, GitHub before the checks,<br/>or a new cloud session"]
-        SETUP["scripts/setup.sh<br/>installs the outside packages<br/>and downloads the SDK's runtime"]
+        SETUP["scripts/setup.sh<br/>installs the outside packages,<br/>downloads the SDK's runtime<br/>and the browser of the browser test"]
         LOCK["backend/uv.lock<br/>frontend/package-lock.json<br/>the exact version of each package"]
         WHO --> SETUP
         SETUP -->|"reads"| LOCK
@@ -188,10 +190,12 @@ How to read it:
   4. "Stop" by the user: the page closes the connection, and the backend then stops the model. A line says that the answer was stopped, and the page reads the history again, which then holds the user's message with no answer.
   Opening another conversation, signing out, and closing or reloading the page also close the connection. A message that the backend refuses before the stream is taken off the chat, and its text goes back into the box.
 - The answer is drawn as Markdown by the library react-markdown, with its default settings. It does not run or draw HTML that an answer holds. The user's own message is shown as written, not as Markdown.
-- The checks are not part of the product. They look at its code: step 3 at `backend/`, step 4 at `frontend/`.
+- The checks are not part of the product. They look at its code: step 3 at `backend/`, step 4 at `frontend/`, and step 5 at the two together.
+- The browser test, `backend/tests/test_browser.py`, runs the whole product as a user does. In one pytest process it starts the stand-in for the model provider, the real backend under uvicorn as a child process, the development server of the frontend as another child process, and a headless Chromium browser through Playwright. The backend gets the environment that the fixtures of `backend/tests/conftest.py` set: a database file and a folder of session files of its own, the address of the stand-in, and a model key made at run time, so no real model is called. Two users are stored with passwords made at run time. User A signs in, starts a conversation, and sends two messages. The stand-in holds the first answer before its first piece, so the page shows that the model is working, and holds the second after two pieces, so the test sees those pieces and none of the rest, and the Stop button; then the test lets it go on. The test sees the title in the list, reloads the page and sees the history, signs out, signs in as user B, sees an empty list, and opens A's conversation by its address to see "Conversation not found". It also checks that every request to the stand-in carried the key of the test. When it ends, it stops the browser and both servers. When it fails, it prints the text of the page, its console, and what the two servers wrote.
+- The browser test is marked "browser". The plain pytest of step 3 leaves it out, through addopts in `backend/pyproject.toml`, and step 5 runs it and nothing else. It lives in the backend folder because it runs in one process with the stand-in and uses the fixtures of the backend tests.
 - A request to the backend goes from the page, through `frontend/src/backend.ts`, to the development server of the frontend, then to uvicorn, then to the application, then to the function for that address. The answer goes back the same way. In the tests of the backend there is no uvicorn: the test calls the application directly. The tests of the frontend replace fetch, so no request leaves them.
 - Three callers run the same check command. So a pass on one machine means the same as a pass on GitHub. The steps run in order, and the command stops at the first step that fails.
-- In steps 3 and 4, the first tool looks for careless code, the second checks the types, and the third runs the tests.
+- In steps 3 and 4, the first tool looks for careless code, the second checks the types, and the third runs the tests. Step 5 is checked by ruff and mypy in step 3, like every Python file.
 
 ## Where the code is
 
@@ -221,11 +225,12 @@ How to read it:
 | Agent module | `backend/app/agent.py` | The only file that imports the Copilot SDK. Starts and stops the SDK's runtime inside the backend's process, in the mode "empty", with the session files in the folder from the settings. Gives the rest of the backend three actions: start a conversation, send a message and get the answer in pieces, and read the history. Lets one message at a time into a conversation. Stops the model when the reader of an answer goes away. Refuses an id it did not make. No type of the SDK leaves the module. |
 | Script that creates a user | `backend/app/create_user.py` | Run by a person by hand from the backend folder, with the user name as its one argument. Asks for the password twice. |
 | Tests | `backend/tests/`, `frontend/src/App.test.tsx`, `frontend/src/backend.test.ts`, `frontend/src/answerStream.test.ts`, `scripts/tests/` | Call the code and compare the result with what is expected. |
+| Browser test | `backend/tests/test_browser.py` | Starts the backend and the development server of the frontend as child processes, with the stand-in for the model provider, and drives the page in a headless Chromium browser with Playwright: two users, sign-in, a conversation, an answer that arrives in pieces, a reload, sign-out, and a conversation of another user. Stops every process it started. Marked "browser", so only the last step of the check command runs it. |
 | Stand-in for the model provider | `backend/tests/model_stand_in.py` | Used by the tests only. A small server on 127.0.0.1 that speaks the streaming format of the Anthropic Messages API and records the requests it gets. A test tells it how to answer: in pieces, held open until the test lets it go on, with an error status, or not at all. So the tests need no model key and call no real model. |
-| The check command | `scripts/check.sh` | Runs every check in order and stops at the first failure. |
+| The check command | `scripts/check.sh` | Runs every check in order and stops at the first failure. Its last step runs the browser test, with pytest from the backend folder. |
 | Document map check | `scripts/check_document_map.py` | Fails when a path in the document map of `AGENTS.md` is missing. |
 | Architecture file check | `scripts/check_architecture.py` | Fails when a path in backticks in `docs/architecture.md` is missing. |
 | Stop hook | `scripts/stop_hook.py` | Runs the check command when the main agent ends a turn. `.claude/settings.json` tells Claude Code to call it. |
-| Checks on GitHub | `.github/workflows/checks.yml` | Runs the check command on every pull request. |
-| Installing dependencies | `scripts/setup.sh` | Installs the exact versions listed in `backend/uv.lock` and `frontend/package-lock.json`. Then downloads the runtime of the Copilot SDK, in the version that the pinned SDK names, into a cache folder outside the repository. |
+| Checks on GitHub | `.github/workflows/checks.yml` | Runs the check command on every pull request. Before that, installs the system libraries that the browser of the browser test needs. |
+| Installing dependencies | `scripts/setup.sh` | Installs the exact versions listed in `backend/uv.lock` and `frontend/package-lock.json`. Then downloads the runtime of the Copilot SDK, in the version that the pinned SDK names, into a cache folder outside the repository. Then installs the Chromium of Playwright for the browser test, unless the variable PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD says that the machine brings its own browser. A failed download gives a warning and does not stop the script. |
 | Rules of the tools | `backend/pyproject.toml`, `frontend/eslint.config.js` | Say which mistakes the tools look for. `backend/pyproject.toml` also holds the rule that only `backend/app/agent.py` may import the Copilot SDK. `frontend/eslint.config.js` also holds the rule that only `frontend/src/backend.ts` may call fetch. |

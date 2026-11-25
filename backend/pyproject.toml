@@ -17,6 +17,12 @@ dependencies = [
 dev = [
     "httpx2>=2.16.2",
     "mypy>=2.4.1",
+    # Pinned to an exact version on purpose. A cloud session has a browser
+    # installed for exactly this version of Playwright, and it cannot download
+    # another one, because its network does not allow the download hosts. A
+    # trial on 2026-11-25 showed both: 1.63.0 finds the installed browser by
+    # itself, and 1.65.2 does not.
+    "playwright==1.63.0",
     "pytest>=9.2.0",
     "ruff>=0.17.6",
 ]
@@ -53,3 +59,10 @@ strict = true
 # The backend has no installed package, so pytest needs these folders on the import path.
 pythonpath = [".", "../scripts"]
 testpaths = ["tests", "../scripts/tests"]
+# The browser test starts the backend, the development server of the frontend
+# and a browser. It runs as the last step of scripts/check.sh, after the
+# checks of the frontend, so the plain pytest step leaves it out.
+addopts = "-m 'not browser'"
+markers = [
+    "browser: the browser test of the whole product; run with: pytest -m browser",
+]

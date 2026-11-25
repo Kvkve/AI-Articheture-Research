@@ -60,6 +60,12 @@ npm run --silent typecheck
 step "Frontend: Vitest"
 npm run --silent test
 
+# Last, because it runs the whole product: the backend, the development
+# server of the frontend and a browser. A "-m" given here replaces the one
+# in addopts of backend/pyproject.toml, so only the browser test runs.
+step "Browser test of the whole product"
+(cd "$backend" && uv run --no-sync pytest -m browser)
+
 trap - ERR
 echo
 echo "All checks passed."
