@@ -177,7 +177,7 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
    | 2. "Roughly how many people live in that city? One sentence." | 1.61 s | 1.83 s | 204 | 144 | 112 | 1,062 bytes |
    | 3. A guide to making tea, with a heading, a numbered list, a code block and a table | 0.66 s | 2.96 s | 449 | 531 | 0 | 2,937 bytes |
    | 4. A question in Chinese about Server-Sent Events | 0.50 s | 1.36 s | 1,047 | 134 | 0 | 4,487 bytes |
-   | 5. "Write a detailed essay of about 1500 words on the history of the bicycle." Stopped by hand | 7.19 s | stopped at 9.35 s | no record | no record | no record | no record |
+   | 5. "Write a detailed essay of about 1500 words on the history of the bicycle." Stopped by hand | 7.19 s | stopped after about 9.4 s | no record | no record | no record | no record |
    | 6. "In one sentence: what have I asked you for so far in this conversation?" | 1.47 s | 1.83 s | 197 | 111 | 79 | 969 bytes |
 
    - Messages 1 to 4 are one conversation. Messages 5 and 6 are a second one.
@@ -187,7 +187,7 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
 2. What the runtime sends for this model. Seen in the dry run and again in part 3, where the body was the same, 814 bytes.
    - `POST /v1/messages`. Headers, among others: `anthropic-version: 2023-06-01`, `anthropic-beta: thinking-binding-controls-2026-08-01`, `user-agent: Anthropic/JS 0.94.0`. The third run saw a second name in the beta header. It is not there with this model.
    - Body settings: `max_tokens: 128000`, `temperature: 1`, `thinking: {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}`, `output_config: {"effort": "medium"}`, `stream: true`. There is no list of tools.
-   - The output limit is 128,000 tokens. For `claude-opus-5-5` in the third run it was 48,000. So the runtime picks the limit by the model name.
+   - The output limit is 128,000 tokens. For `claude-opus-5-5` in the third run it was 48,000. So the runtime seems to pick the limit by the model name. This is an inference from two models.
    - The system prompt is exactly the text of the product, with a prompt-cache marker. The user message has the `<current_datetime>` line in front and a prompt-cache marker, as in the third run.
    - The body of a request that the product sent directly to the provider was not seen. The runtime's own record gives its size: 786 bytes for message 1. The dry-run request was 814 bytes, and its message was 28 characters longer. So the two have the same shape. This is an inference from the sizes.
 3. Which of these settings the application can change. Each row is one variant of the trial script. "Sent" is what the request then held, seen at the stand-in and, where the last column has an answer, also at the forwarder.
@@ -205,10 +205,10 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
    | `inference.models` with one entry for the model and `max_output_tokens: 2000` | `max_tokens: 2000` | answered |
    | the same limit, given in `capabilities.limits` of that entry | `max_tokens: 2000` | not sent |
    | `capabilities.supports.adaptive_thinking: "required"` or `"optional"`, with `reasoning_effort: "none"` | `thinking: {"type": "disabled"}`, `temperature: 0`, no `output_config` | refused with status 400: "`temperature` is deprecated for this model." Sent once, with "required" |
-   | `capabilities.supports.adaptive_thinking: "unsupported"` | `thinking: {"type": "enabled", "budget_tokens": 2048, …}`, no `output_config` | refused with status 400: "\"thinking.type.enabled\" is not supported for this model." |
+   | `capabilities.supports.adaptive_thinking: "unsupported"`, together with `capabilities.supports.reasoning_effort: false` | `thinking: {"type": "enabled", "budget_tokens": 2048, …}`, no `output_config` | refused with status 400: "\"thinking.type.enabled\" is not supported for this model." |
    | `capabilities.supports.reasoning_effort: false` alone | no change | not sent |
 
-   - Effort: the application can set it. The SDK takes any text. It does not refuse a value it does not know: it sends "high".
+   - Effort: the application can set it. The one value that the SDK did not know, "banana", was not refused: the request held "high".
    - Output limit: the application can set it, with an entry in `inference.models`. See result 4 for what happens when an answer reaches the limit.
    - Reasoning summary: the application can switch it off. The model still thinks, and the thinking is still paid for. With a question that needs thought, the request with `display: "omitted"` used 700 thinking tokens, and the request with the summary used 689. With "omitted" the SDK gave no reasoning events at all.
    - Thinking itself: no way was found to switch it off for this model with SDK 2.0.1. The two ways that the options offer both end in a refusal by the provider. With effort "low" the model did not think in either of the two requests that tried it.
@@ -222,8 +222,8 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
    - With no thinking, the first text was on the page after 0.5 to 0.7 seconds (messages 1, 3 and 4). With some thinking, after about 1.5 seconds (messages 2 and 6, with 112 and 79 reasoning tokens).
    - The product's own path costs little. The first text was on the page 0.10 to 0.23 seconds later than the time to the first token in the runtime's record. The path is browser, development server, backend, the resume of the session, and back.
    - A long answer arrives in many small steps. Answer 3, 531 output tokens, grew on the page 107 times in 2.2 seconds. The chat stayed scrolled to its bottom.
-   - Thinking can make the wait long. For message 5 the first text came after 7.2 seconds. The page showed "The model is working…" for all of that time. The usage record of this turn is missing, so the number of thinking tokens is not known.
-   - The same was seen at the forwarder in part 3, with the message "I have a 3-litre jug and a 5-litre jug and a tap. Describe the shortest way to measure exactly 4 litres, as numbered steps." One request for each row:
+   - The longest wait was that of message 5: the first text came after 7.2 seconds. Its cause was not measured. The turn was stopped, so it has no usage record and no count of thinking tokens. That the model thought during those seconds is an inference from the next point.
+   - Thinking makes the wait long. This was measured at the forwarder in part 3, with the message "I have a 3-litre jug and a 5-litre jug and a tap. Describe the shortest way to measure exactly 4 litres, as numbered steps." One request for each row:
 
      | Setting | Output tokens | Of these, thinking | First reasoning piece | First text | End |
      |---|---|---|---|---|---|
@@ -239,19 +239,19 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
    - Prices for Claude Haiku 5.5, for prompts up to 100,000 tokens: $0.10 for a million input tokens, $0.125 for a million tokens written to the 5-minute cache, $0.01 for a million tokens read from the cache, $0.50 for a million output tokens. Thinking is paid as output. From the vendor's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-27. A request with a prompt over 100,000 tokens costs five times as much.
    - At these prices the 20 answered requests cost about $0.003. The stopped answer is not in this number. That the three refused requests cost nothing is an assumption and was not checked.
    - The history is sent again with every message. In the first conversation the input grew from 137 to 204, 449 and 1,047 tokens over four messages, and the body from 786 to 4,487 bytes.
-   - The prompt cache. In the first three messages the cache counts were 0. In message 4 the runtime's record shows 1,047 input tokens and 1,043 tokens written to the cache. The first attempt showed the same: 1,010 and 1,006. So the cache markers take effect once the prompt is long enough, here somewhere between 449 and 1,010 tokens. This supports the inference of the third run, that its prompts were too short. No request read from the cache: no fifth message was sent. That the 1,047 input tokens of the record include the 1,043 is an inference, from adding up the turn before.
+   - The prompt cache. In the first three messages the cache counts were 0. In message 4 the runtime's record shows 1,047 input tokens and 1,043 tokens written to the cache. The first attempt showed the same: 1,010 and 1,006. In both conversations the first write to the cache came with the fourth message, when the prompt had passed 1,000 tokens. The likely cause is the length of the prompt: in this run the change lies somewhere between 449 and 1,010 tokens. This is an inference. It fits the inference of the third run, that its prompts were too short. No request read from the cache: no fifth message was sent. That the 1,047 input tokens of the record include the 1,043 is an inference, from adding up the turn before.
    - The runtime reports `cost: 0.0` again. Its usage record has what a cost needs: the input, output, reasoning and cache counts of each request.
    - The session files hold one usage record, of the type `session.usage_record`, for each answered request. For the stopped answer there is none: the file holds an event of the type `abort` with the reason "user_initiated" and no token counts. So the application cannot learn from the session files how many tokens a stopped answer used.
    - The record names `reasoningSummary: "detailed"`, while the request says `display: "summarized"`. The record names the limits that the runtime uses for this model: 128,000 prompt tokens and 128,000 output tokens.
 7. The four more things in the browser.
    - Markdown. The page drew the heading, the numbered list and the code block of answer 3. The model wrote the table in the usual Markdown form with bars, and the page showed it as plain text with bars. This is the known limit of task 7: the page has no add-on for tables.
    - Chinese. The model answered the Chinese question in Chinese, in three sentences. The answer grew on the page 33 times.
-   - "Stop". The script pressed it about 2.2 seconds after the first text of answer 5, with 1,733 characters on the page. The page showed "The answer was stopped." and took a new message 0.06 seconds later. The history then held the question with no answer, also after a reload. Answer 6 named the essay: "You asked me to write a detailed essay of about 1,500 words on the history of the bicycle." So the stopped message stays in what the model sees.
+   - "Stop". The script pressed it about two seconds after the first text of answer 5. The time of the click itself was not recorded. The answer last grew 9.35 seconds after "Send", with 1,733 characters on the page, and the page took a new message 0.06 seconds after that. The page showed "The answer was stopped." The text of the stopped answer left the page: the history held the question with no answer, also after a reload. Answer 6 named the essay: "You asked me to write a detailed essay of about 1,500 words on the history of the bicycle." So the stopped message stays in what the model sees.
    - A made-up key. A second backend got a key that the launch script made up. The page showed "The answer could not be completed. Try again later." 0.36 seconds after the click. The log of the backend held the cause: the provider's status 401, in a text of the runtime. That text tells the reader to check `COPILOT_PROVIDER_API_KEY` and two more variables of the runtime. The product does not use them: its variable is `POC_MODEL_API_KEY`. In task 4, against the stand-in, the runtime tried a 401 again for about two seconds. Here the whole refusal took 0.36 seconds.
    - After a reload the second conversation was open again, with two messages of the user and one answer. The list showed both titles, the later conversation first.
 8. The key is in no file. After the run, a script read the key from the variable and looked for it, without printing it.
    - In the scratch folder of the trial, with every record, log, session file, screenshot and the video, and in the working copy of the repository, without the installed packages: 368 files, the key in none.
-   - In every file under `/root`, `/tmp`, `/var/tmp`, `/home` and `/var/log` that had changed in the two hours of the run, again without the installed packages: 2,222 files, the key in none.
+   - In every file under `/root`, `/tmp`, `/var/tmp`, `/home` and `/var/log` that had changed in the two hours before the search, again without the installed packages: 2,222 files, the key in none.
    - The screenshots and the video were shown to the owner in the conversation. They are not kept in the repository.
 
 ### What this changes
@@ -259,9 +259,9 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
 - The model from configuration works through the SDK and the product. Until now only `claude-opus-5-5` had been tried.
 - "Whether the application can change the settings the runtime chooses" moves from "not tested" to: effort, the output limit and the reasoning summary can be changed with session options. Thinking cannot be switched off for this model. Effort "low" is the nearest thing.
 - New: the runtime answers a reached output limit by asking the model to continue, up to three requests in this run, and then ends the turn with no error.
-- New: the first text can take seven seconds when the model thinks. The reasoning summary arrives during that wait. This speaks for task 9, which shows it. Three of the five answers in the browser had no reasoning at all.
+- New: when the model thinks for long, the first text takes seconds: 5.0 seconds in the one request where this was measured. The reasoning summary arrives during that wait. This speaks for task 9, which shows it. Three of the five answers in the browser had no reasoning at all.
 - New: the session files hold the token counts of every answered request, and none for a stopped answer.
-- New: the prompt cache starts to work by itself when a conversation has grown to about 1,000 tokens.
+- New: in this run the prompt cache started to work by itself when a conversation had grown to about 1,000 tokens.
 
 ### Limits of this run
 
@@ -527,7 +527,7 @@ The fourth run used the scripts below. They are throwaway experiments and not pr
 - `settings_trial.py` is part 1 and part 3: the session options, against the stand-in or through the forwarder. It ran from `backend/`, with `PYTHONPATH=.` so that it finds the settings class of the product. The variable `TRIAL_PROMPT` gives another message.
 - `start_product.sh` and `stop_product.sh` start and stop the backend and the page for part 2.
 - `browser_run.js` is part 2: it drives the page.
-- Four more scripts of 20 to 40 lines each are not printed. One prints a summary of the records. One reads the usage records from the session files. Two look for the key in files: they read the key from the variable, search the bytes of each file, and print only the names of files that hold it.
+- Four more scripts of under 50 lines each are not printed. One prints a summary of the records. One reads the usage records from the session files. Two look for the key in files: they read the key from the variable, search the bytes of each file, and print the number of files searched and the names of files that hold the key. One of the two also adds up the tokens.
 
 ```python
 """Trial of the request settings that the runtime of the Copilot SDK chooses,
