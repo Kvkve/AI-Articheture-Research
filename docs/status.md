@@ -1,6 +1,6 @@
 # Current status
 
-Updated 2026-11-25 (US Eastern Time).
+Updated 2026-11-27 (US Eastern Time).
 
 ## Where the work stands
 
@@ -15,6 +15,7 @@ Updated 2026-11-25 (US Eastern Time).
   - Task 5, the endpoints for conversations (pull request #14).
   - Task 6, chat with streaming (pull request #15).
   - Task 7, the frontend and the browser test (pull request #16).
+  - Task 8, the trial with the real model (pull request #17). It changed no code.
 - What is built, file by file, is in `docs/architecture.md`: one diagram and a table of what each component does. `implementer` updates it as part of each task and `reviewer` checks it against the code. The rule is in `CLAUDE.md`. The file states its own rules near its top.
 - What tasks 1 to 3 added, in short:
   - `backend/` is a FastAPI application. Its dependencies are managed with `uv` and locked in `backend/uv.lock`. `frontend/` is a React and TypeScript application made with `create-vite`.
@@ -76,6 +77,19 @@ Updated 2026-11-25 (US Eastern Time).
   - The frontend has 50 unit tests in three files next to the code: `App.test.tsx`, `backend.test.ts` and `answerStream.test.ts`.
   - The browser test, `backend/tests/test_browser.py`. It starts the stand-in, the backend under uvicorn, the development server and a headless Chromium, and drives the page as two users. It is marked "browser". The plain pytest leaves it out, and the last step of `./scripts/check.sh` runs it alone.
   - `backend/pyproject.toml` pins `playwright==1.63.0`. `scripts/setup.sh` installs the browser for it, unless the machine says that it brings its own. The checks on GitHub install the system libraries of the browser, and passed with the browser test at the first try.
+- What task 8 found. It changed no code. The full account is the section "Fourth run: the product in a browser, with the real model" of the trial note, `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. Each number below comes from one request.
+  - The product works with the real model, `claude-haiku-5-5`. The main agent drove the page in the cloud session: six messages in two conversations. The owner chose this, and saw screenshots and a video.
+  - Timing. With no thinking, the first text is on the page after 0.5 to 0.7 seconds. The product's own path adds 0.1 to 0.2 seconds of that. When the model thinks, the wait is longer: 5.0 seconds in one request with 689 thinking tokens. One message in the browser waited 7.2 seconds, and the cause of that was not measured. The model decides for each request whether it thinks.
+  - What the runtime sends for this model: adaptive thinking with a summary, effort "medium", an output limit of 128,000 tokens, `temperature: 1`, and prompt-cache markers. The limit depends on the model: it was 48,000 for `claude-opus-5-5`.
+  - What the application can change, with session options that the function `_inference` of `backend/app/agent.py` would give: the effort (`reasoning_effort`), the output limit (an entry in `models` with `max_output_tokens`), and the reasoning summary (`reasoning_summary`, where "none" switches it off while the thinking is still paid for). A made-up effort value was not refused: it was sent as "high".
+  - Thinking cannot be switched off for this model with SDK 2.0.1. The provider refuses both ways that the options offer, with status 400. Effort "low" is the nearest thing. In one comparison it cut the output from 989 to 346 tokens, and the wait for the first text from 5.0 to 0.4 seconds.
+  - An answer that reaches the output limit: the runtime asks the model to continue by itself, three requests in the run, and then ends the turn with no error. The reader gets a cut answer with no mark.
+  - Tokens. The session files hold a usage record for each answered request, of the type `session.usage_record`, with the input, output, reasoning and cache counts. A stopped answer has none. The runtime reports a cost of 0.
+  - In this run the prompt cache started by itself when a conversation had grown to about 1,000 tokens. No request of the run read from it.
+  - Cost. The 20 answered requests of the run cost about $0.003. Claude Haiku 5.5 costs $0.10 for a million input tokens and $0.50 for a million output tokens, for prompts up to 100,000 tokens (the vendor's pricing page, read 2026-11-27). Thinking is paid as output.
+  - With a made-up key the page shows its general error line after 0.4 seconds. The log of the backend has the status 401, in a text of the runtime that names variables the product does not use.
+  - A table in an answer of the real model shows as plain text with bars, as task 7 expected.
+  - The key is in no file. Two searches after the run found it nowhere.
 - The title of a conversation (the owner's choice on 2026-11-24): the table of conversations has a `title` column. The title is the opening of the first message. Task 6 writes it. The list of conversations gives it, and gives `null` while there is none. The frontend shows "New conversation" for `null`.
 - The choices of the first PoC in one line each. The reasons and the accepted costs are in `docs/tasks.md`.
   - Agent layer: the Copilot SDK. It was not compared with other options. All code that touches it stays in one module.
@@ -87,7 +101,7 @@ Updated 2026-11-25 (US Eastern Time).
   - The open endpoints are sign-in, `/health` and the pages of the generated API documentation. Every other endpoint needs a token.
   - The secret key that signs the tokens is random at each start of the backend, unless the variable `POC_TOKEN_SECRET_KEY` gives one. A restart signs every user out. This fits one backend process only.
   - The database is SQLite, with SQL written by hand.
-  - The default model is Claude Haiku 5.5, set in configuration.
+  - The default model is Claude Haiku 5.5, set in configuration. Task 8 showed that it works.
   - The interface shows the model's reasoning. This is the last building task and is dropped if it proves troublesome.
   - The runtime of the SDK is under the "GitHub Copilot CLI License", which is not an open-source license. The owner chose on 2026-11-24 to go on using it: the project only downloads and runs it. `docs/sources.md` records it.
   - The settings class reads the model key from the variable `POC_MODEL_API_KEY`. With no key the backend starts, and a message is refused.
@@ -112,9 +126,9 @@ Updated 2026-11-25 (US Eastern Time).
   - Each team may later have its own frontend. So the backend API and the message format are a contract: written down, and free of anything only one frontend needs.
   - People the owner works with also recommend the Copilot SDK. The owner cannot share their documents. Do not ask for them.
 - What the research, the trials and task 4 found about the SDK, in short. The full account is in `docs/research/reports/第一版 PoC 技术调研.md`, in the trial note next to it, and under task 4 in `docs/tasks.md`.
-  - With no GitHub sign-in, the SDK started, streamed an answer, stored the conversation on disk, resumed it and read the history back. This held against a local stand-in and against a real model (one run).
+  - With no GitHub sign-in, the SDK started, streamed an answer, stored the conversation on disk, resumed it and read the history back. This held against a local stand-in and against a real model, with two models.
   - The runtime adds its own system prompt. `system_message` with mode "replace" swaps it for the application's own text.
-  - With a real model the runtime chooses several request settings by itself: thinking on, effort "medium", an output limit of 48,000 tokens, and prompt-cache markers. Whether the application can change them is not tested. The session options of the SDK have fields named `reasoning_effort` and `reasoning_summary`. Task 8 can try them.
+  - With a real model the runtime chooses several request settings by itself: thinking on, effort "medium", an output limit that depends on the model, and prompt-cache markers. The points under "What task 8 found" say which of them the application can change.
   - `mode="empty"`, which the vendor advises for shared use, demands an explicit storage directory and an explicit tool list for each session.
   - The SDK has no notion of a user and no lock. The module lets one action at a time into a conversation.
   - The SDK can stop an answer that is being written, with `abort`. The history then holds the user's message and no part of the stopped answer.
@@ -127,9 +141,9 @@ Updated 2026-11-25 (US Eastern Time).
   - The SDK changes fast. It is pinned at exactly 2.0.1, the version of the trial runs. Version 2.0.2 came out on 2026-11-24.
   - The SDK can delete a session, with `delete_session` of its client. Seen in its source on 2026-11-24 and not tried. The agent module has no action for it.
   - The session files of a conversation are in a folder named by the conversation id, inside a folder named session-state in the folder of the session files. One test of task 5 reads this layout.
-- Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. The settings class reads it. So a backend that is started by hand in a session on that environment has the real key and the real provider address. **A message sent to such a backend calls the real model and costs money.** For a trial by hand that needs no model, start the backend with the variable removed, for example with `env -u POC_MODEL_API_KEY` in front of the command. It then answers a message with 503. To see answers with no real model, point it at the stand-in: see "How to run and verify". The tests are safe: `backend/tests/conftest.py` removes the key and the other model variables before every test. Only task 8 means to call the real model. The browser test is safe too: it gives the backend the environment of the test, and checks that the stand-in got the key of the test.
+- Model key: the project environment `AI-Articheture-Research` holds a Claude API key as the variable `POC_MODEL_API_KEY`. The settings class reads it. So a backend that is started by hand in a session on that environment has the real key and the real provider address. **A message sent to such a backend calls the real model and costs money.** For a trial by hand that needs no model, start the backend with the variable removed, for example with `env -u POC_MODEL_API_KEY` in front of the command. It then answers a message with 503. To see answers with no real model, point it at the stand-in: see "How to run and verify". The tests are safe: `backend/tests/conftest.py` removes the key and the other model variables before every test. Task 8 was the one task that means to call the real model, and it is done. Tasks 9 and 10 need no real model. The browser test is safe too: it gives the backend the environment of the test, and checks that the stand-in got the key of the test.
 - Cloud environments: the project environment allows `github.com`, `release-assets.githubusercontent.com`, `api.anthropic.com` and the package registries. It has one variable and a setup script. The script calls `scripts/setup.sh` when a new machine is built for a session.
-  - Seen on 2026-11-24, in the sessions for task 3 and for task 4: the session started with the packages from before the last tasks. The checks failed at the mypy step with "Cannot find implementation or library stub". `./scripts/setup.sh` fixed it. Run it at the start of a session when a check fails this way. The sessions for task 5 and for task 6 started with the right packages. The session for task 7 on 2026-11-25 failed this way again.
+  - Seen on 2026-11-24, in the sessions for task 3 and for task 4: the session started with the packages from before the last tasks. The checks failed at the mypy step with "Cannot find implementation or library stub". `./scripts/setup.sh` fixed it. Run it at the start of a session when a check fails this way. The sessions for task 5 and for task 6 started with the right packages. The session for task 7 on 2026-11-25 failed this way again. So did the session for task 8 on 2026-11-27: the SDK was not installed at all.
   - A cloud session has a Chromium installed for exactly Playwright 1.63.0, in the folder that the variable `PLAYWRIGHT_BROWSERS_PATH` names, and it sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`. The environment does not allow the hosts that Playwright downloads a browser from. This is why `backend/pyproject.toml` pins `playwright==1.63.0`. If the browser test one day cannot find its browser in a new session, the image of the session has moved to another version: `npm ls -g playwright` shows it. Change the pin and `backend/uv.lock` to that version.
 
 ## How the work with the owner goes
@@ -146,30 +160,28 @@ These points come from the owner. The rules themselves are in `AGENTS.md` and `C
 - Dates in files are US Eastern Time. The clock of a cloud session shows UTC, which is a day ahead in the evening. Check with `TZ=America/New_York date`.
 - How the owner learns, said on 2026-11-24. The owner studies general ideas elsewhere, in another session or with another tool: HTTP, APIs, tokens, streaming. The building goes on here. After each task the owner asks about it in broad terms: the summary in Chinese and what changed in the diagram of `docs/architecture.md`. The owner does not read code line by line. Configuration files and scripts are black boxes unless the owner asks.
 - The owner watches the usage of the main model, and asked about it on 2026-11-24. The main agent's reading of this, not the owner's words: keep each session to one task, and put long explanations in a separate session.
-- The owner means to get hands-on when building in the work setting. The main agent suggested that the owner runs the trial of task 8 in the browser in person. The owner has not said yes or no to that. Whether the owner writes any part by hand is the owner's choice. Do not set exercises.
-- A choice can be asked with the question form of the session, with the recommended option first. Each question must stand by itself, because the owner may see only the form. The owner answered the choices of tasks 3, 4, 5 and 6 this way. In task 5 the owner took another option than the recommended one for the order of the list. So the owner reads the options, and the costs must be written with care. In task 6 the main agent first wrote the options and the small choices it would make by itself in the conversation, in Chinese, and then asked with the form. In task 7 it did the same, with a table of the options and their costs for each choice, and the owner took the four recommended options.
+- The owner means to get hands-on when building in the work setting. For the trial of task 8 the owner chose on 2026-11-27 that the main agent drives the browser in the cloud session, and not to run the product in person. Whether the owner writes any part by hand is the owner's choice. Do not set exercises.
+- A choice can be asked with the question form of the session, with the recommended option first. Each question must stand by itself, because the owner may see only the form. The owner answered the choices of tasks 3, 4, 5 and 6 this way. In task 5 the owner took another option than the recommended one for the order of the list. So the owner reads the options, and the costs must be written with care. In task 6 the main agent first wrote the options and the small choices it would make by itself in the conversation, in Chinese, and then asked with the form. In task 7 it did the same, with a table of the options and their costs for each choice, and the owner took the four recommended options. In task 8 it did the same for two choices, and the owner took both recommended options.
+- A file can be shown to the owner in the conversation: screenshots as pictures, and a video of the page as a file. In task 8 the main agent sent seven screenshots and one video this way. They were not put in the repository.
 
 ## Next step
 
-1. Task 8 of the plan: the trial with the real model. Start a new session for it, on the project environment `AI-Articheture-Research`. It is the only task that calls the real model.
-2. Then tasks 9 and 10 of the plan, one at a time.
+1. One choice for the owner, which task 8 raised. It does not block task 9. Should the product get settings for the effort and for the output limit? Today the runtime chooses effort "medium" and a limit of 128,000 output tokens, and the product gives it no option. The main agent asked the owner at the end of the session of 2026-11-27 and recommended to leave it for the first PoC and to list it under "Later" in `docs/tasks.md`. If the owner has not answered, ask again.
+2. Task 9 of the plan: show the model's reasoning. Start a new session for it.
+3. Then task 10 of the plan.
 
-For task 8. Before the work, ask the owner how the trial runs. The main agent's guess at the options, not checked:
+For task 9. Before the work, ask the owner the design choices, with options and costs. What is known for it:
 
-- The main agent runs the page in the cloud session against the backend with the real key, drives it with Playwright, and shows screenshots. The owner does not touch the page.
-- The owner runs the page in person. The page of a cloud session is on the machine of that session. Whether the owner can open it from outside was not tried. On the owner's own computer it needs the repository, `uv`, `npm` and a model key there.
-- The main agent suggested "in person" on 2026-11-24. The owner has not said yes or no.
+- The plan of task 9 in `docs/tasks.md`, with its acceptance criteria. The task is dropped if it proves troublesome.
+- How the reasoning reaches the product. The SDK gives the reasoning summary as events of the type `assistant.reasoning_delta`, each with a piece of text, before the events of the answer's text. `backend/app/agent.py` skips them today.
+- With the real model in task 8: when the model thought for seconds, 67 reasoning pieces arrived over 3.5 seconds, and then the whole text at once. A short thought arrives in one burst with the answer. Three of the five answers in the browser had no reasoning, and then no reasoning event comes.
+- The history. After a resume, the SDK returns an assistant message with its stored summary in the field `reasoning_text`. This is from the third trial run. In the session files the field is named `reasoningText`.
+- The stand-in of the tests sends text only. Task 9 needs it to send thinking too. In the provider's stream of task 8, a thinking block came first: a `content_block_start` event with a block of the type "thinking", then `content_block_delta` events whose delta has the type "thinking_delta" and the field `thinking`, then one delta of the type "signature_delta", then `content_block_stop`. The text block followed. The name of the field of the signature delta was not recorded.
+- The request of the product asks for the summary already: `display: "summarized"`. No session option is needed for it.
+- `frontend/src/answerStream.ts` skips a kind of message that it does not know. So a fourth kind of message does not break a frontend that ignores it.
+- Task 9 needs no real model and no key.
 
-What is ready for task 8, and what is not known:
-
-- The plan of task 8 in `docs/tasks.md`, with its acceptance criteria.
-- A backend started by hand in a session on the project environment has the real key. "How to run and verify" says how to start the backend and the page together.
-- The default model is Claude Haiku 5.5, set in configuration. No run has used it yet. The one real run so far used another model.
-- The page has only been seen with the stand-in. Not seen with a real model: how fast the pieces come, a long answer with scrolling, and the Markdown that a model really writes. A table in an answer shows as plain text with bars, because the page has no add-on for tables.
-- The findings go into the trial note, `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`: the request settings that the runtime chooses for this model, the timing and the token counts. The task also finds out whether the application can change the thinking, effort and output limit settings. The session options of the SDK have fields named `reasoning_effort` and `reasoning_summary`.
-- Never print the key, and keep it out of every file.
-
-How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent.
+How to start a session on the project environment: on the screen for starting a new session, the environment selector is the first control in the row under the message box. It is shown only until the first message is sent. The setup script of that environment installs the dependencies, so use it for tasks 9 and 10 too.
 
 ## How to run and verify
 
@@ -201,6 +213,10 @@ How to start a session on the project environment: on the screen for starting a 
 - Use the page: create a user with the script, open the address, and sign in. **With the real key in the environment, each message calls the real model and costs money.**
 - Run the tests of the frontend alone: `cd frontend && npm run test`. Run the browser test alone: `cd backend && uv run --no-sync pytest -m browser`.
 - Drive the page by hand in a cloud session with the Playwright that the session has installed: in a Node script, `require('playwright')` works from any folder, and `chromium.launch()` needs no options. Keep the script and its screenshots in a scratch folder. On 2026-11-25 the main agent tried the page this way, against a backend with the stand-in.
+  - A script that opens a new conversation must wait until the page shows it before it writes a message. The page makes a new chat view for each conversation, and text that is written into the old one is lost. On 2026-11-27 a script wrote too early, and "Send" stayed switched off.
+  - The option `recordVideo` of the browser context records a video of the page. A screenshot for a person is sharper with `deviceScaleFactor: 2`.
+- Run a trial with the real model again: the scripts of task 8 are printed at the end of the trial note. One starts the backend and the page on scratch data. One drives the page and measures the times. One tries session options of the SDK, against the stand-in or through a small forwarder that records the real requests and the provider's token counts. One request to Claude Haiku 5.5 costs a small part of a cent. Ask the owner before a new run with the real model.
+- Read what a conversation cost: the file `events.jsonl` in the session folder of the conversation has one event of the type `session.usage_record` for each answered request.
 - Where the rules of the checks are: `backend/pyproject.toml` for Python, `frontend/eslint.config.js` and the `tsconfig` files for TypeScript.
 - A new Python file in `scripts/` must be added to the list `known-first-party` in `backend/pyproject.toml`. Without this, the import-order rule sorts its imports wrongly.
 - Run pytest from `backend/` with no path argument, or with `-k`. A path argument outside `backend/` skips the settings, and the tests in `scripts/tests/` then cannot import their modules.
@@ -239,13 +255,19 @@ How to start a session on the project environment: on the screen for starting a 
   - A draft pull request, opened before the review has ended, lets the checks on GitHub run early. On 2026-11-25 this showed that the browser test passes there, which no run in a session can show.
   - The session can refuse an action of a subagent or of the main agent, such as the install of a package that no lock file names. Do not work around it. Tell the owner.
 
-The trial scripts for the SDK are printed at the end of `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. Never print the key. Do not name the key variable `ANTHROPIC_API_KEY`: the session's own program may read that name. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form.
+The trial scripts for the SDK, and those of task 8 for the product, are printed at the end of `docs/research/research_notes/第一版 PoC 技术调研/sdk_trial_run.md`. Never print the key. Do not name the key variable `ANTHROPIC_API_KEY`: the session's own program may read that name. In a cloud session a Claude API key can only be given as an environment variable in the environment's settings, not through the secure form.
 
 ## Open items
 
 - One task under "Set the rules" waits for the owner: protect `main` on GitHub. When `main` is protected, the check named `checks` can be made required for merging. The default branch is already `main`.
 - The research did not compare the SDK with other agent SDKs or with a plain model client.
-- The real trial of the SDK was one run with one model, and it was not the model now chosen. Not tested with a real model: latency over many runs, long answers, provider errors such as a wrong key or a rate limit, stopping an answer, and changing the settings the runtime chooses. Task 8 of the plan covers part of this.
+- The trials with a real model are single runs: one with `claude-opus-5-5` and one with `claude-haiku-5-5`, the model now chosen. Still not tested with a real model: latency over many runs, answers of many thousands of tokens, a rate limit of the provider, a request that reads from the prompt cache, and a long conversation.
+- Found in task 8 and left as they are. The product gives the runtime no option for the effort or the output limit: the owner's choice under "Next step".
+  - The application cannot switch thinking off for `claude-haiku-5-5` with SDK 2.0.1.
+  - An answer that reaches the output limit is cut with no mark, after the runtime has asked the model to continue. With the limit of 128,000 tokens that the runtime chooses, this needs a very long answer.
+  - The application cannot learn from the session files what a stopped answer cost.
+  - When the provider refuses the key, the log of the backend holds a hint of the runtime that names variables the product does not use. The variable of the product is `POC_MODEL_API_KEY`.
+  - The settings were tried with a trial script, not through the code of the product.
 - The time of a resume was measured with short conversations only. It grows with the length of the conversation. An issue report in the research says that resuming a very large session takes much memory.
 - `./scripts/check.sh` takes about 150 seconds and grows with every test that starts the backend. The package `pytest-xdist` (MIT) would run the tests side by side. It was not added. The owner was told on 2026-11-24 and has not asked for it.
 - The license of the runtime: the release package holds no license file. That the license of the repository `github/copilot-cli` covers the package is the main agent's inference.

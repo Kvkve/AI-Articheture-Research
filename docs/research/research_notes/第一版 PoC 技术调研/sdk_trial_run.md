@@ -259,7 +259,7 @@ This is task 8 of the first PoC. The owner chose that the main agent drives the 
 - The model from configuration works through the SDK and the product. Until now only `claude-opus-5-5` had been tried.
 - "Whether the application can change the settings the runtime chooses" moves from "not tested" to: effort, the output limit and the reasoning summary can be changed with session options. Thinking cannot be switched off for this model. Effort "low" is the nearest thing.
 - New: the runtime answers a reached output limit by asking the model to continue, up to three requests in this run, and then ends the turn with no error.
-- New: when the model thinks for long, the first text takes seconds: 5.0 seconds in the one request where this was measured. The reasoning summary arrives during that wait. This speaks for task 9, which shows it. Three of the five answers in the browser had no reasoning at all.
+- New: when the model thinks for long, the first text takes seconds: 3.4 and 5.0 seconds in the two requests where the model thought for long. The reasoning summary arrives during that wait. This speaks for task 9, which shows it. Three of the five answers in the browser had no reasoning at all.
 - New: the session files hold the token counts of every answered request, and none for a stopped answer.
 - New: in this run the prompt cache started to work by itself when a conversation had grown to about 1,000 tokens.
 
